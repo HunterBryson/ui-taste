@@ -1,0 +1,14 @@
+{
+  "name": "ui-taste",
+  "version": "1.0.0",
+  "description": "A learning loop between you and your AI about what you like in UIs: box a part of a design, your AI says back what it sees, you answer Yes or Not quite.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node tools/taste.mjs start",
+    "open": "node tools/taste.mjs open",
+    "doctor": "node tools/taste.mjs doctor"
+  },
+  "license": "MIT"
+}

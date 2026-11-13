@@ -1,0 +1,609 @@
+<!doctype html>
+<!-- UI Taste: one design, big, and the parts of it you and your AI have talked about. Box a part, your AI says back what it sees, you answer Yes or Not quite. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Taste</title>
+<link rel="icon" id="icon" href="data:,">
+<style>
+  :root { --bg:#0c0d10; --tile:#16181d; --line:#272a32; --ink:#ecebe8; --soft:#b4b7be; --dim:#7f828a;
+    --him:#6cc6ff; --him-body:#0f1f2b; --odie:#f5a524; --odie-body:#231a09; --odie-ink:#1a1206; --ok:#63d391; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 17px/1.45 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  button, textarea, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .app { display: grid; grid-template-columns: 248px 1fr; grid-template-rows: 132px 1fr; height: 100vh; }
+
+  /* the header: the name, what the AI has learned by kind, and the two things to do */
+  .top { grid-column: 1 / -1; position: relative; display: flex; align-items: center; gap: 28px; padding: 0 32px 0 28px;
+    background: radial-gradient(900px 140px at 18% 0%, rgba(108,198,255,.10), transparent 70%), radial-gradient(700px 140px at 62% 0%, rgba(245,165,36,.07), transparent 70%), #0e1015; }
+  .top::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: linear-gradient(90deg, rgba(108,198,255,0) 0%, rgba(108,198,255,.7) 22%, rgba(108,198,255,.25) 45%, rgba(245,165,36,.25) 60%, rgba(245,165,36,.75) 85%, rgba(245,165,36,0) 100%); }
+  .brand { display: flex; align-items: center; gap: 18px; flex: none; }
+  .mark { width: 54px; height: 54px; flex: none; }
+  .brand .words { display: flex; flex-direction: column; }
+  .home { color: var(--dim); text-decoration: none; font-size: 14px; line-height: 1; margin-bottom: 6px; }
+  .home:hover { color: var(--ink); }
+  h1 { margin: 0; font-size: 38px; font-weight: 700; line-height: 1.05; letter-spacing: -.5px; white-space: nowrap; }
+  .tag { margin-top: 6px; color: var(--soft); font-size: 16px; white-space: nowrap; }
+  .rule { width: 1px; align-self: stretch; margin: 26px 0; background: linear-gradient(transparent, #343843, transparent); flex: none; }
+
+  .map { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .map .lab { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: var(--odie); white-space: nowrap; }
+  .map .lab img { width: 22px; height: 22px; border-radius: 50%; }
+  .map .lab #learnedN { color: var(--soft); font-weight: 600; }
+  #labFace { display: contents; }
+  .tiles { display: flex; gap: 12px; min-width: 0; }
+  .kt { flex: 1 1 0; min-width: 0; max-width: 200px; height: 62px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 12px;
+    border: 2px solid #2a2e37; background: #12151b; color: var(--dim); text-align: left; overflow: hidden; }
+  .kt .ic { width: 38px; height: 38px; flex: none; border-radius: 8px; display: grid; place-items: center; background: #1a1e26; background-size: cover; background-position: center; }
+  i.ai { display: grid; place-items: center; border-radius: 50%; background: var(--odie); color: var(--odie-ink); font-style: normal; font-weight: 700; flex: none; }
+  i.me svg { width: 60%; height: 60%; }
+  .map .lab i.ai { width: 22px; height: 22px; font-size: 12px; }
+  .sheet header i.ai { width: 56px; height: 56px; font-size: 26px; }
+  .bal .who i.ai, .say i.ai { background: var(--odie); color: var(--odie-ink); }
+  .bal .who i.ai { font-size: 14px; }
+  .say i.ai { font-size: 18px; background: var(--odie); color: var(--odie-ink); }
+  .kt .ic svg { width: 22px; height: 22px; }
+  .kt .tx { min-width: 0; display: flex; flex-direction: column; line-height: 1.1; }
+  .kt .nm { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kt .ct { font-size: 22px; font-weight: 700; }
+  .kt.has { border-color: var(--odie); background: linear-gradient(180deg, #2a1f0b, #1b1508); color: var(--ink); box-shadow: 0 0 0 1px rgba(245,165,36,.15), 0 6px 22px rgba(245,165,36,.12); cursor: pointer; }
+  .kt.has .ct { color: var(--odie); }
+  .kt.has:hover { filter: brightness(1.15); }
+  .kt:not(.has) { cursor: default; }
+
+  .top .right { display: flex; gap: 14px; align-items: center; flex: none; }
+  .send { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; min-width: 178px; height: 62px; padding: 0 22px; border-radius: 31px; border: 0;
+    background: var(--him); color: #06202e; opacity: .4; cursor: default; box-shadow: none; }
+  .send .a { font-size: 18px; font-weight: 700; white-space: nowrap; }
+  .send .b { font-size: 14px; font-weight: 600; opacity: .8; white-space: nowrap; }
+  .send.on { opacity: 1; cursor: pointer; box-shadow: 0 6px 26px rgba(108,198,255,.35); }
+  .send.on:hover { filter: brightness(1.08); }
+  .bal .draft { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--him); }
+  .add { height: 62px; padding: 0 22px; border-radius: 31px; border: 2px dashed #4a4e59; background: none; color: var(--ink); font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .add:hover { border-color: var(--ink); }
+
+  /* the filmstrip: every design, by name */
+  .strip { overflow-y: auto; padding: 4px 16px 24px 24px; scrollbar-width: thin; scrollbar-color: #2c2f38 transparent; }
+  .strip h2 { margin: 18px 0 10px; font-size: 15px; font-weight: 600; color: var(--soft); display: flex; justify-content: space-between; }
+  .strip h2.odie { color: var(--odie); }
+  .strip h2:first-child { margin-top: 4px; }
+  .th { display: block; width: 100%; padding: 0; margin: 0 0 12px; border: 2px solid transparent; border-radius: 10px; background: var(--tile); overflow: hidden; text-align: left; position: relative; }
+  .th img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; opacity: .8; }
+  .th span { display: block; padding: 7px 10px 9px; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .th:hover img { opacity: 1; }
+  .th.on { border-color: var(--him); }
+  .th.on img { opacity: 1; }
+  .th .asks { position: absolute; top: 8px; right: 8px; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 13px; background: var(--odie); color: var(--odie-ink); font-size: 14px; font-weight: 700; line-height: 26px; text-align: center; }
+  .th .pts { position: absolute; top: 8px; left: 8px; height: 24px; padding: 0 9px; border-radius: 12px; background: rgba(12,13,16,.82); color: var(--him); font-size: 13px; font-weight: 700; line-height: 24px; }
+
+  /* the stage: one design, big, and what we've said about its parts */
+  .stage { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-rows: 1fr auto; }
+  .look { position: relative; min-height: 0; overflow: hidden; }
+  .pic { position: absolute; border-radius: 8px; box-shadow: 0 18px 60px rgba(0,0,0,.55); cursor: crosshair; user-select: none; -webkit-user-drag: none; }
+  .box { position: absolute; border: 3px solid var(--him); border-radius: 8px; pointer-events: auto; cursor: pointer; }
+  .box.odie { border-color: var(--odie); }
+  .box.dim { opacity: .45; }
+  .box.draw { pointer-events: none; background: rgba(108,198,255,.08); }
+  .look.drawing .bal, .look.drawing svg.tails { opacity: .12; pointer-events: none; }
+  svg.tails { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; overflow: visible; }
+
+  .bal { position: absolute; z-index: 3; width: 300px; border-radius: 14px; border: 3px solid var(--him); background: var(--him-body); padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .bal.odie { border-color: var(--odie); background: var(--odie-body); }
+  .bal.ok { border-color: var(--ok); }
+  .bal .who { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--him); }
+  .bal.odie .who { color: var(--odie); }
+  .bal .who img, .bal .who i { width: 26px; height: 26px; border-radius: 50%; flex: none; }
+  .bal .who i { display: grid; place-items: center; background: var(--him); color: #06202e; font-style: normal; font-size: 14px; }
+  .bal .who .tag { margin-left: auto; font-weight: 600; font-size: 13px; color: var(--soft); }
+  .bal .who .tag.ok { color: var(--ok); }
+  .bal .x { margin-left: 6px; border: 0; background: none; color: var(--dim); font-size: 16px; padding: 0 2px; visibility: hidden; }
+  .bal:hover .x { visibility: visible; }
+  .bal .x:hover { color: var(--ink); }
+  .bal p { margin: 0; font-size: 17px; line-height: 1.4; overflow-wrap: anywhere; }
+  .bal p.quiet { color: var(--soft); font-style: italic; }
+  .bal .mine { margin: 10px -14px -12px; padding: 10px 14px 12px; border-top: 3px solid var(--odie); background: var(--odie-body); border-radius: 0 0 11px 11px; }
+  .bal .mine .who { color: var(--odie); }
+  .bal.ok .mine { border-top-color: var(--ok); }
+  .bal .said { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(108,198,255,.3); color: var(--him); font-size: 16px; }
+  .acts { display: flex; gap: 8px; margin-top: 10px; }
+  .acts button { height: 38px; padding: 0 18px; border-radius: 19px; font-weight: 700; font-size: 16px; }
+  .yes { border: 0; background: var(--odie); color: var(--odie-ink); }
+  .yes:hover { filter: brightness(1.1); }
+  .nq { border: 2px solid #6b5a33; background: none; color: var(--ink); }
+  .nq:hover { border-color: var(--odie); }
+  .bal textarea { display: block; width: 100%; min-height: 64px; margin-top: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #2f4a5e; background: #0a141c; resize: none; font-size: 17px; line-height: 1.4; outline: none; }
+  .bal textarea:focus { border-color: var(--him); }
+  .bal .hint { margin-top: 6px; font-size: 13px; color: var(--dim); }
+
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--soft); font-size: 19px; }
+  .empty b { display: block; color: var(--ink); font-size: 28px; margin-bottom: 10px; }
+  .teach { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; padding: 8px 18px; border-radius: 20px; background: rgba(15,31,43,.92); border: 1px solid #2f4a5e; color: var(--him); font-size: 15px; white-space: nowrap; pointer-events: none; z-index: 2; }
+
+  /* under the picture: the whole-picture words. His on the left, mine on the right. */
+  .foot { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 12px 32px 20px 16px; align-items: stretch; }
+  .say { display: flex; align-items: flex-start; gap: 12px; min-height: 68px; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--tile); min-width: 0; }
+  .say.him { border-color: #24506b; background: var(--him-body); }
+  .say.odie { border-color: #6b5a33; background: var(--odie-body); }
+  .say img, .say i { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+  .say i { display: grid; place-items: center; background: var(--him); color: #06202e; font-style: normal; font-weight: 700; }
+  .say .body { min-width: 0; flex: 1; }
+  .say .lab { font-size: 14px; font-weight: 700; color: var(--him); }
+  .say.odie .lab { color: var(--odie); }
+  .say textarea { display: block; width: 100%; border: 0; background: none; outline: none; resize: none; padding: 0; font-size: 17px; line-height: 1.4; height: 24px; max-height: 72px; color: var(--ink); }
+  .say textarea::placeholder { color: var(--dim); }
+  .say p { margin: 0; font-size: 17px; }
+  .say p.quiet { color: var(--soft); }
+  .used { display: inline-block; margin: 6px 8px 0 0; padding: 2px 12px; border-radius: 12px; border: 1px solid #6b5a33; color: var(--odie); font-size: 14px; font-weight: 600; }
+  .decide { display: flex; gap: 12px; align-items: center; }
+  .decide button { flex: 1; height: 68px; border-radius: 14px; font-size: 19px; font-weight: 700; }
+  .keep { border: 0; background: var(--him); color: #06202e; }
+  .keep:hover, .clear:hover { filter: brightness(1.12); }
+  .clear { border: 2px solid var(--line); background: var(--tile); }
+  kbd { font: 600 13px "Segoe UI", system-ui, sans-serif; margin-left: 8px; padding: 2px 7px; border-radius: 5px; background: rgba(0,0,0,.25); }
+  .rm { align-self: center; border: 0; background: none; color: var(--dim); font-size: 14px; white-space: nowrap; }
+  .rm:hover { color: var(--ink); }
+
+  /* what the AI has learned: the parts, by kind */
+  .sheet { position: fixed; inset: 0; z-index: 20; background: rgba(12,13,16,.97); display: none; overflow-y: auto; padding: 28px 48px 60px; }
+  .sheet.on { display: block; }
+  .sheet header { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
+  .sheet header img { width: 56px; height: 56px; border-radius: 50%; }
+  .sheet h2 { margin: 0; font-size: 28px; }
+  .sheet header p { margin: 2px 0 0; color: var(--soft); }
+  .sheet .close { margin-left: auto; height: 44px; padding: 0 20px; border-radius: 22px; border: 2px solid var(--line); background: var(--tile); font-weight: 600; }
+  .sheet h3 { margin: 30px 0 14px; font-size: 22px; }
+  .shelf { display: flex; flex-wrap: wrap; gap: 18px; }
+  .part { width: 330px; border: 0; padding: 0; background: var(--tile); border-radius: 12px; overflow: hidden; text-align: left; }
+  .part:hover { outline: 2px solid var(--him); }
+  .part .crop { height: 170px; background: #08090b center / contain no-repeat; }
+  .part .w { padding: 10px 14px 12px; }
+  .part .w p { margin: 0 0 4px; font-size: 16px; }
+  .part .w .h { color: var(--him); }
+  .part .w .o { color: var(--odie); }
+  .part .w small { color: var(--dim); font-size: 13px; }
+
+  .drop { position: fixed; inset: 0; display: none; place-items: center; background: rgba(12,13,16,.9); border: 3px dashed var(--him); font-size: 28px; z-index: 30; }
+  body.dragging .drop { display: grid; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 12px 22px; border-radius: 24px; background: #20232a; border: 1px solid var(--line); font-size: 16px; display: none; z-index: 40; }
+
+  /* a phone: the same things, stacked, and the parts as a list under the picture */
+  @media (max-width: 900px) {
+    html, body { overflow: auto; height: auto; }
+    .app { display: block; height: auto; }
+    .top { flex-wrap: wrap; gap: 10px 16px; padding: 14px 16px; }
+    .home, .rule, .mark { display: none; }
+    .map { flex-basis: 100%; order: 3; } .tiles { flex-wrap: wrap; } .kt { flex: 1 1 30%; }
+    .send, .add { height: 48px; }
+    .strip { display: flex; gap: 10px; overflow-x: auto; padding: 0 16px 10px; }
+    .strip h2 { display: none; }
+    .th { flex: none; width: 150px; margin: 0; }
+    .look { overflow: visible; padding: 0 16px; }
+    .pic { position: static; width: 100% !important; height: auto !important; }
+    .box, svg.tails, .teach { display: none; }
+    .bal { position: static; width: auto; margin: 12px 0 0; }
+    .foot { grid-template-columns: 1fr; padding: 12px 16px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 54 54" aria-hidden="true">
+        <path d="M27 6 48 17 27 28 6 17Z" fill="none" stroke="#6cc6ff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M6 27 27 38 48 27" fill="none" stroke="#6cc6ff" stroke-opacity=".7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M6 37 27 48 48 37" fill="none" stroke="#f5a524" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <div class="words">
+        <a class="home" id="home" href="#" hidden>← Back</a>
+        <h1>UI Taste</h1>
+        <div class="tag">Box what you like. <span class="ai-name">Claude</span> learns it.</div>
+      </div>
+    </div>
+    <div class="rule"></div>
+    <div class="map">
+      <div class="lab"><span id="labFace"></span><span>What <span class="ai-name">Claude</span> has learned so far <span id="learnedN"></span></span></div>
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <div class="rule"></div>
+    <div class="right">
+      <button class="send" id="send"><span class="a">➤ Send to <span class="ai-name">Claude</span></span><span class="b" id="sendN">nothing waiting</span></button>
+      <button class="add" id="add">+ Drop or paste a design</button>
+      <input type="file" id="pick" accept="image/*" multiple hidden>
+    </div>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="stage">
+    <div class="look" id="look"></div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+<div class="sheet" id="sheet"></div>
+<div class="drop">Drop it. It goes straight into your taste.</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let AI = 'Claude', FACE = '', ME = '';   // filled from /api/config before the first draw
+const isAI = p => p.by === 'ai' || p.by === 'odie', isMe = p => p.by === 'person' || p.by === 'hunter';
+const FIGURE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg>';
+async function who() {
+  try {
+    const c = await fetch('/api/config').then(r => r.json());
+    AI = c.ai?.name || 'Claude';
+    FACE = c.ai?.picture ? '<img src="/api/picture" alt="">' : `<i class="ai">${esc(AI.slice(0, 1).toUpperCase())}</i>`;
+    const n = (c.person?.name || '').trim();
+    ME = n ? esc(n.slice(0, 1).toUpperCase()) : '';
+  } catch { FACE = '<i class="ai">C</i>'; }
+  document.querySelectorAll('.ai-name').forEach(x => x.textContent = AI);
+  document.title = 'UI Taste';
+  $('labFace').innerHTML = FACE;
+  $('icon').href = FACE.startsWith('<img') ? '/api/picture' : 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 54"><path d="M27 6 48 17 27 28 6 17Z" fill="none" stroke="#6cc6ff" stroke-width="4" stroke-linejoin="round"/><path d="M6 37 27 48 48 37" fill="none" stroke="#f5a524" stroke-width="4" stroke-linejoin="round"/></svg>');
+  try { if (document.referrer && new URL(document.referrer).origin !== location.origin) { $('home').href = document.referrer; $('home').hidden = false; } } catch {}
+}
+const meIcon = () => `<i class="me">${ME || FIGURE}</i>`;
+const narrow = () => innerWidth <= 900;
+let all = [], cur = null, active = null, draft = null, fixing = null, editing = null, learned = [], typed = {};   // typed: his half-written words, kept through any redraw
+const toast = (s, ms = 2400) => { const t = $('toast'); t.textContent = s; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', ms); };
+const name = it => it.title || it.from?.title || (it.from?.how === 'glass' && it.from?.app) || 'Untitled';
+const img = it => `/api/taste/${it.id}/image`;
+const mine = () => all.filter(x => x.status !== 'inbox'), brought = () => all.filter(x => x.status === 'inbox').sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+const asks = it => (it.points || []).filter(p => p.read && !p.verdict).length;       // my reads waiting on his Yes / Not quite
+const item = () => all.find(x => x.id === cur);
+const api = (path, method, body) => fetch('/api/taste' + path, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+const typing = () => !!(draft || fixing || editing) || document.activeElement?.tagName === 'TEXTAREA';
+
+async function load(first) {
+  const [a, l] = await Promise.all([fetch('/api/taste').then(r => r.json()), fetch('/api/taste/learned').then(r => r.json())]);
+  all = a.items || []; learned = l.learned || [];
+  if (!item()) {
+    let want = null; try { want = new URLSearchParams(location.search).get('open') || localStorage.getItem('taste-open'); } catch {}
+    const order = [...mine(), ...brought()];
+    cur = (order.find(x => x.id === want) || order.find(asks) || order[0])?.id || null;
+  }
+  drawStrip(); drawTop(); crops();
+  if (first || !item() || !document.querySelector('.pic')) drawStage();
+  else if (!typing()) { drawParts(); if (document.activeElement?.id !== 'note') drawFoot(); }
+}
+
+const unsent = () => { let n = 0; for (const it of all) for (const p of it.points || []) if ((isMe(p) && !p.read && p.sent === false) || (p.verdict?.ok === false && p.verdict.sent === false)) n++; return n; };
+const KINDS = [['layout', 'Layout'], ['feel', 'Feel'], ['colors', 'Colors'], ['buttons', 'Buttons'], ['navigation', 'Navigation'], ['type', 'Type']];
+const ICON = {"layout":"<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><path d=\"M3 9h18M9 9v12\"/>","feel":"<path d=\"M12 3l2.6 5.6L20 9.3l-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.4-.7z\"/>","colors":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"8.5\" cy=\"10\" r=\"1.4\"/><circle cx=\"12\" cy=\"7.5\" r=\"1.4\"/><circle cx=\"15.5\" cy=\"10\" r=\"1.4\"/><path d=\"M12 21c-1.5 0-2-1-2-2s1-1.5 1-2.5S9.5 15 8 15\"/>","buttons":"<rect x=\"3\" y=\"7\" width=\"18\" height=\"10\" rx=\"5\"/>","navigation":"<path d=\"M4 6h16M4 12h16M4 18h10\"/>","type":"<path d=\"M4 18 9 6l5 12M5.8 14h6.4M16 18v-5.5a2.5 2.5 0 0 1 5 0V18M16 15h5\"/>"};
+function drawTop() {
+  const t = $('tiles'); t.innerHTML = '';
+  for (const [k, label] of KINDS) {
+    const got = learned.filter(p => p.kind === k), last = got[got.length - 1];
+    const b = document.createElement('button'); b.className = 'kt' + (got.length ? ' has' : '');
+    b.title = got.length ? `${got.length} ${label.toLowerCase()} part${got.length === 1 ? '' : 's'} learned. Click to see them.` : `Nothing about ${label.toLowerCase()} yet. Box one you like.`;
+    b.innerHTML = `<span class="ic"${last ? ` style="background-image:url(/api/taste/${last.item}/points/${last.point}/crop)"` : ''}>${last ? '' : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`}</span><span class="tx"><span class="nm">${label}</span><span class="ct">${got.length}</span></span>`;
+    if (got.length) b.onclick = () => drawSheet(k);
+    t.append(b);
+  }
+  const u = unsent(); $('send').classList.toggle('on', u > 0); $('sendN').textContent = u ? `${u} waiting` : 'nothing waiting'; $('send').title = u ? `Send what you boxed and said to ${AI} (Alt+Q)` : 'Nothing waiting. Box a part or tap Not quite, then send it here.';
+  const n = learned.length;
+  $('learnedN').textContent = n ? `· ${n} part${n === 1 ? '' : 's'}` : '· nothing yet';
+}
+
+function drawStrip() {
+  const s = $('strip'), y = s.scrollTop; s.innerHTML = '';
+  const group = (title, cls, list) => {
+    if (!list.length) return;
+    const h = document.createElement('h2'); h.className = cls; h.innerHTML = `<span>${title}</span><span>${list.length}</span>`; s.append(h);
+    for (const it of list) {
+      const b = document.createElement('button'); b.className = 'th' + (it.id === cur ? ' on' : ''); b.title = name(it);
+      const n = asks(it), pts = (it.points || []).length;
+      b.innerHTML = `<img loading="lazy" src="${img(it)}" alt="">${pts ? `<b class="pts">${pts} part${pts === 1 ? '' : 's'}</b>` : ''}${n ? `<b class="asks" title="${AI} is asking you about ${n} part${n === 1 ? '' : 's'}">${n}</b>` : ''}<span>${esc(name(it))}</span>`;
+      b.onclick = () => open(it.id); s.append(b);
+    }
+  };
+  group('Yours', '', mine());
+  group(`${AI} brought these`, 'odie', brought());
+  s.scrollTop = y;
+}
+
+function open(id) {
+  saveNote(); cur = id; active = draft = fixing = editing = null;
+  try { localStorage.setItem('taste-open', id); } catch {}
+  drawStrip(); drawStage();
+  document.querySelector('.th.on')?.scrollIntoView({ block: 'nearest' });
+}
+
+// ---- the stage ----
+let picRect = null;
+function drawStage() {
+  const look = $('look'), it = item(); look.innerHTML = '';
+  if (!it) {
+    look.innerHTML = `<div class="empty"><div><b>Nothing here yet</b>See a design you like? Paste it here with Ctrl+V, drop it on the page,<br>or, if you use the glass, box it on your screen and tap ♥ Taste.</div></div>`;
+    $('foot').innerHTML = ''; return;
+  }
+  const im = new Image(); im.className = 'pic'; im.draggable = false; im.src = img(it);
+  im.onload = () => { if (cur === it.id) { look.append(im); fit(im); drawParts(); } };
+  drawFoot();
+}
+
+// The picture is as big as the stage allows, with room left around it so balloons for parts near an edge sit outside it.
+function fit(im) {
+  const look = $('look'); if (narrow()) { picRect = null; return; }
+  const W = look.clientWidth, H = look.clientHeight, padX = 170, padY = 28;
+  const k = Math.min((W - padX * 2) / im.naturalWidth, (H - padY * 2) / im.naturalHeight);
+  const w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
+  picRect = { x: Math.round((W - w) / 2), y: Math.round((H - h) / 2), w, h };
+  Object.assign(im.style, { left: picRect.x + 'px', top: picRect.y + 'px', width: w + 'px', height: h + 'px' });
+}
+
+const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+const px = b => ({ x: picRect.x + b.x * picRect.w, y: picRect.y + b.y * picRect.h, w: b.w * picRect.w, h: b.h * picRect.h });
+
+function drawParts() {
+  const look = $('look'), it = item(); if (!it) return;
+  look.querySelectorAll('.box, .bal, svg.tails, .teach').forEach(n => n.remove());
+  const pts = [...(it.points || [])];
+  const list = narrow() || !picRect;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'tails');
+  const placed = [], boxes = list ? [] : pts.map(p => px(p.box));
+  if (draft && !list) boxes.push(px(draft.box));
+
+  const place = (el, bx, color, body) => {
+    look.append(el);
+    if (list) return;
+    const W = look.clientWidth, H = look.clientHeight, w = el.offsetWidth, h = el.offsetHeight, gap = 26;
+    const cx = bx.x + bx.w / 2, cy = bx.y + bx.h / 2;
+    const cands = [
+      { x: cx - w / 2, y: bx.y - h - gap, side: 'top' }, { x: cx - w / 2, y: bx.y + bx.h + gap, side: 'bottom' },
+      { x: bx.x - w - gap, y: cy - h / 2, side: 'left' }, { x: bx.x + bx.w + gap, y: cy - h / 2, side: 'right' },
+      { x: bx.x, y: bx.y - h - gap, side: 'top' }, { x: bx.x + bx.w - w, y: bx.y + bx.h + gap, side: 'bottom' },
+    ];
+    let best = null;
+    for (const c of cands) {
+      const r = { x: Math.min(W - w - 8, Math.max(8, c.x)), y: Math.min(H - h - 8, Math.max(8, c.y)), w, h, side: c.side };
+      let cost = Math.abs(r.x - c.x) + Math.abs(r.y - c.y);                        // pushed off its spot by an edge
+      cost += overlap(r, picRect) * 0.008;                                         // covering the picture
+      cost += overlap(r, bx) * 2;                                                  // covering its own part
+      for (const o of boxes) if (o !== bx) cost += overlap(r, o) * 0.05;           // covering another part
+      for (const o of placed) cost += overlap(r, { x: o.x - 10, y: o.y - 10, w: o.w + 20, h: o.h + 20 }) * 1;   // on another balloon
+      if (!best || cost < best.cost) best = { ...r, cost };
+    }
+    placed.push(best); el.style.left = best.x + 'px'; el.style.top = best.y + 'px';
+    // the tail: from the balloon's nearest edge to the nearest point of the part
+    const bcx = best.x + w / 2, bcy = best.y + h / 2;
+    const tip = { x: Math.min(bx.x + bx.w, Math.max(bx.x, bcx)), y: Math.min(bx.y + bx.h, Math.max(bx.y, bcy)) };
+    const dx = tip.x - bcx, dy = tip.y - bcy; let a, b;
+    if (Math.abs(dy) * w > Math.abs(dx) * h) { const y = dy < 0 ? best.y + 4 : best.y + h - 4, x = Math.min(best.x + w - 34, Math.max(best.x + 34, tip.x)); a = { x: x - 15, y }; b = { x: x + 15, y }; }
+    else { const x = dx < 0 ? best.x + 4 : best.x + w - 4, y = Math.min(best.y + h - 30, Math.max(best.y + 30, tip.y)); a = { x, y: y - 15 }; b = { x, y: y + 15 }; }
+    if (Math.hypot(tip.x - (a.x + b.x) / 2, tip.y - (a.y + b.y) / 2) < 8) return;
+    const fill = document.createElementNS(svg.namespaceURI, 'polygon'); fill.setAttribute('points', `${a.x},${a.y} ${tip.x},${tip.y} ${b.x},${b.y}`); fill.setAttribute('fill', body);
+    const edge = document.createElementNS(svg.namespaceURI, 'polyline'); edge.setAttribute('points', `${a.x},${a.y} ${tip.x},${tip.y} ${b.x},${b.y}`);
+    edge.setAttribute('fill', 'none'); edge.setAttribute('stroke', color); edge.setAttribute('stroke-width', 3); edge.setAttribute('stroke-linejoin', 'round');
+    svg.append(fill, edge);
+  };
+
+  pts.forEach(p => {
+    const agreed = p.verdict?.ok === true, mineFirst = isAI(p);
+    const css = getComputedStyle(document.documentElement), v = k => css.getPropertyValue(k).trim();
+    const color = agreed ? v('--ok') : mineFirst ? v('--odie') : v('--him'), body = mineFirst ? v('--odie-body') : v('--him-body');
+    if (!list) {
+      const bx = px(p.box), d = document.createElement('div');
+      d.className = 'box' + (mineFirst ? ' odie' : '') + (active && active !== p.id ? ' dim' : '');
+      Object.assign(d.style, { left: bx.x + 'px', top: bx.y + 'px', width: bx.w + 'px', height: bx.h + 'px', borderColor: color });
+      d.onclick = e => { e.stopPropagation(); active = active === p.id ? null : p.id; drawParts(); };
+      look.append(d);
+    }
+    const el = document.createElement('div'); el.className = 'bal' + (mineFirst ? ' odie' : '') + (agreed ? ' ok' : ''); el.dataset.p = p.id;
+    el.innerHTML = balloon(p);
+    wire(el, p);
+    place(el, list ? null : px(p.box), color, body);
+  });
+
+  if (draft && !list) {
+    const bx = px(draft.box), d = document.createElement('div'); d.className = 'box';
+    Object.assign(d.style, { left: bx.x + 'px', top: bx.y + 'px', width: bx.w + 'px', height: bx.h + 'px' }); look.append(d);
+    const el = document.createElement('div'); el.className = 'bal';
+    el.innerHTML = `<div class="who">${meIcon()}You</div><textarea id="draftWords" placeholder="What do you like here? A few words, or none."></textarea><div class="hint">Enter saves it · Esc takes the box back</div>`;
+    place(el, bx, '#6cc6ff', '#0f1f2b');
+    const t = el.querySelector('textarea'); t.value = draft.words || ''; t.focus();
+    t.oninput = () => draft.words = t.value;
+    t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); savePoint(); } else if (e.key === 'Escape') { draft = null; drawParts(); } };
+  }
+  look.append(svg);
+  const box = look.querySelector("[data-fix], [data-edit]"); if (box && document.activeElement !== box) { box.focus(); box.selectionStart = box.selectionEnd = box.value.length; }
+  if (!list && !pts.length && !draft && it.status !== 'inbox') { const t = document.createElement('div'); t.className = 'teach'; t.textContent = `Drag a box around any part you like. That is how you show ${AI} what you mean.`; look.append(t); }
+}
+
+function balloon(p) {
+  const agreed = p.verdict?.ok === true, notQuite = p.verdict?.ok === false;
+  const face = FACE;
+  const myRead = () => {
+    let s = `<p>${esc(p.read.text)}</p>`;
+    if (!p.verdict && fixing !== p.id) s += `<div class="acts"><button class="yes" data-do="yes">Yes</button><button class="nq" data-do="nq">Not quite</button></div>`;
+    if (fixing === p.id) s += `<textarea data-fix placeholder="What is it, then? Your words."></textarea><div class="hint">Enter sends it to ${AI} · Esc goes back</div>`;
+    if (notQuite) s += `<div class="said">You: ${esc(p.verdict.words || 'Not quite.')}</div>` + (p.verdict.sent === false ? `<div class="draft">Not sent yet · ➤ Send to ${AI} when you're ready</div>` : `<div class="hint">Sent. ${AI} is looking again.</div>`);
+    return s;
+  };
+  if (isAI(p)) {
+    const tag = agreed ? `<span class="tag ok">you agreed ✓</span>` : notQuite ? `<span class="tag">looking again</span>` : `<span class="tag">${AI}'s guess</span>`;
+    return `<div class="who">${face}${AI}${tag}<button class="x" data-do="del" title="take this part off">✕</button></div>${myRead()}`;
+  }
+  const his = editing === p.id ? `<textarea data-edit></textarea><div class="hint">Enter saves · Esc goes back</div>`
+    : p.his ? `<p data-do="edit" title="click to change your words">${esc(p.his)}</p>` : `<p class="quiet" data-do="edit">This part. (no words, click to add some)</p>`;
+  let s = `<div class="who">${meIcon()}You<button class="x" data-do="del" title="take this part off">✕</button></div>${his}`;
+  if (p.read) s += `<div class="mine"><div class="who">${face}${AI}${agreed ? `<span class="tag ok">you agreed ✓</span>` : ''}</div>${myRead()}</div>`;
+  else if (p.sent === false) s += `<div class="draft">Not sent yet · ➤ Send to ${AI} when you're ready</div>`;
+  else s += `<div class="hint">Sent. ${AI} is looking.</div>`;
+  return s;
+}
+
+function wire(el, p) {
+  const it = item(), path = `/${it.id}/points/${p.id}`;
+  const patch = async body => { const r = await api(path, 'PATCH', body); if (r.ok) Object.assign(p, await r.json()); else toast("That didn't save, try again"); };
+  el.onclick = e => e.stopPropagation();
+  el.querySelectorAll('[data-do]').forEach(b => b.onclick = async e => {
+    e.stopPropagation(); const what = b.dataset.do;
+    if (what === 'yes') { await patch({ verdict: { ok: true } }); refresh(); }
+    else if (what === 'nq') { fixing = p.id; drawParts(); }
+    else if (what === 'edit') { editing = p.id; drawParts(); }
+    else if (what === 'del') { const r = await api(path, 'DELETE'); if (r.ok) { it.points = it.points.filter(x => x.id !== p.id); refresh(); toast('That part is off'); } }
+  });
+  const fx = el.querySelector('[data-fix]');
+  if (fx) { fx.value = typed["f" + p.id] || ""; fx.oninput = () => typed["f" + p.id] = fx.value; fx.onkeydown = async e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fixing = null; delete typed["f" + p.id]; await patch({ verdict: { ok: false, words: fx.value } }); refresh(); toast(`Saved. It goes to ${AI} when you press ➤`); }
+    else if (e.key === 'Escape') { fixing = null; drawParts(); } }; }
+  const ed = el.querySelector('[data-edit]');
+  if (ed) { ed.value = typed["e" + p.id] ?? (p.his || ""); ed.oninput = () => typed["e" + p.id] = ed.value; ed.onkeydown = async e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); editing = null; delete typed["e" + p.id]; await patch({ his: ed.value }); refresh(); }
+    else if (e.key === 'Escape') { editing = null; drawParts(); } }; }
+}
+// Every part needs its crop (the AI reads it, the header tiles show it). The page cuts any that are missing.
+const cutting = new Set();
+async function crops() {
+  for (const it of all) {
+    const need = (it.points || []).filter(p => !p.crop && !cutting.has(p.id));
+    if (!need.length) continue;
+    need.forEach(p => cutting.add(p.id));
+    const im = await new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = img(it); });
+    if (!im) continue;
+    for (const p of need) {
+      const pad = 0.012, x0 = Math.max(0, p.box.x - pad), y0 = Math.max(0, p.box.y - pad), x1 = Math.min(1, p.box.x + p.box.w + pad), y1 = Math.min(1, p.box.y + p.box.h + pad);
+      const W = im.naturalWidth, H = im.naturalHeight, c = document.createElement('canvas');
+      const sx = Math.round(x0 * W), sy = Math.round(y0 * H); c.width = Math.max(8, Math.round((x1 - x0) * W)); c.height = Math.max(8, Math.round((y1 - y0) * H));
+      c.getContext('2d').drawImage(im, sx, sy, c.width, c.height, 0, 0, c.width, c.height);
+      const r = await api(`/${it.id}/points/${p.id}/crop`, 'PUT', { image: c.toDataURL('image/png') }).catch(() => null);
+      if (r?.ok) p.crop = true; else cutting.delete(p.id);
+    }
+  }
+}
+function refresh() { drawStrip(); drawParts(); drawTop(); fetch('/api/taste/learned').then(r => r.json()).then(l => { learned = l.learned || []; drawTop(); }); }
+
+async function savePoint() {
+  const it = item(), d = draft; if (!it || !d) return;
+  draft = null;
+  const r = await api(`/${it.id}/points`, 'POST', { box: d.box, his: d.words || '' });
+  if (!r.ok) { draft = d; toast("That didn't save. Your words are still here, press Enter again."); drawParts(); return; }
+  (it.points ||= []).push(await r.json()); refresh(); crops();
+}
+
+// Drawing a box on the picture: press, drag, let go, say what you like.
+let drag = null;
+$('look').addEventListener('mousedown', e => {
+  if (!picRect || !e.target.classList.contains('pic') || item()?.status === 'inbox' && false) return;
+  if (draft) { if ((draft.words || '').trim()) return savePoint(); draft = null; }
+  const r = $('look').getBoundingClientRect(); e.preventDefault();
+  drag = { x0: e.clientX - r.left, y0: e.clientY - r.top, el: Object.assign(document.createElement('div'), { className: 'box draw' }) };
+  $('look').append(drag.el); $('look').classList.add('drawing');
+});
+addEventListener('mousemove', e => {
+  if (!drag) return; const r = $('look').getBoundingClientRect();
+  const cl = (v, a, b) => Math.min(b, Math.max(a, v));
+  const x1 = cl(e.clientX - r.left, picRect.x, picRect.x + picRect.w), y1 = cl(e.clientY - r.top, picRect.y, picRect.y + picRect.h);
+  drag.r = { x: Math.min(drag.x0, x1), y: Math.min(drag.y0, y1), w: Math.abs(x1 - drag.x0), h: Math.abs(y1 - drag.y0) };
+  Object.assign(drag.el.style, { left: drag.r.x + 'px', top: drag.r.y + 'px', width: drag.r.w + 'px', height: drag.r.h + 'px' });
+});
+addEventListener('mouseup', () => {
+  if (!drag) return; const d = drag; drag = null; d.el.remove(); $('look').classList.remove('drawing');
+  if (!d.r || d.r.w < 14 || d.r.h < 14) { if (active) { active = null; drawParts(); } return; }
+  active = null; fixing = editing = null;
+  draft = { box: { x: (d.r.x - picRect.x) / picRect.w, y: (d.r.y - picRect.y) / picRect.h, w: d.r.w / picRect.w, h: d.r.h / picRect.h }, words: '' };
+  drawParts();
+});
+
+// ---- under the picture ----
+let noteTimer = null;
+function drawFoot() {
+  const f = $('foot'), it = item(); if (!it) return;
+  const used = (it.used || []).map(u => `<span class="used">Used in ${esc(u.what)}, ${new Date(u.at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>`).join('');
+  if (it.status === 'inbox') {
+    f.innerHTML = `<div class="say odie">${FACE}<div class="body"><div class="lab">Why ${AI} brought it</div><p>${esc(it.why || 'No line on this one.')}</p></div></div>
+      <div class="decide"><button class="keep" id="keep">♥ Keep it<kbd>K</kbd></button><button class="clear" id="clear">Clear it<kbd>X</kbd></button></div>`;
+    $('keep').onclick = () => decide(true); $('clear').onclick = () => decide(false);
+    return;
+  }
+  const take = it.take ? `<p>${esc(it.take)}</p>` : it.why ? `<p>${esc(it.why)}</p>` : `<p class="quiet">Nothing yet. Box a part and tell me what you like about it.</p>`;
+  f.innerHTML = `<div class="say him">${meIcon()}<div class="body"><div class="lab">You, on the whole thing</div><textarea id="note" rows="1" placeholder="Anything about it as a whole. Or just box the parts."></textarea></div><button class="rm" id="rm" title="set aside, not deleted">Remove</button></div>
+    <div class="say odie">${FACE}<div class="body"><div class="lab">${it.take ? `What ${AI} takes from this one` : it.why ? `Why ${AI} brought it` : `What ${AI} takes from this one`}</div>${take}${used}</div></div>`;
+  const n = $('note'); n.value = it.note || ''; const grow = () => { n.style.height = '24px'; n.style.height = Math.min(72, n.scrollHeight) + 'px'; }; grow();
+  n.oninput = () => { grow(); clearTimeout(noteTimer); noteTimer = setTimeout(saveNote, 700); };
+  n.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); n.blur(); toast('Saved ✓'); } };
+  n.onblur = saveNote;
+  $('rm').onclick = async () => { const r = await api('/' + it.id, 'DELETE'); if (r.ok) { all = all.filter(x => x.id !== it.id); cur = null; toast('Removed (set aside in the folder, not deleted)'); load(true); } };
+}
+async function saveNote() {
+  clearTimeout(noteTimer); const n = $('note'), it = item(); if (!n || !it || it.status === 'inbox') return;
+  const v = n.value.trim(); if (v === (it.note || '')) return;
+  const r = await api('/' + it.id, 'PATCH', { note: v }); if (r.ok) it.note = v; else toast("Your line didn't save, try again");
+}
+async function decide(keepIt) {
+  const it = item(); if (!it || it.status !== 'inbox') return;
+  const order = brought(), i = order.findIndex(x => x.id === it.id), next = order[i + 1] || order[i - 1];
+  const r = keepIt ? await api(`/${it.id}/keep`, 'POST', {}) : await api('/' + it.id, 'DELETE');
+  if (!r.ok) return toast("That didn't go through, try again");
+  if (keepIt) { Object.assign(it, await r.json()); toast('♥ Kept. Now box the part you like.'); open(it.id); }
+  else { all = all.filter(x => x.id !== it.id); toast('Cleared'); cur = null; if (next) open(next.id); else load(true); }
+}
+
+// ---- what the AI has learned ----
+const KIND = { layout: 'Layouts', navigation: 'Navigation', buttons: 'Buttons', colors: 'Colors', type: 'Type', feel: 'The feel', other: 'Not sorted yet' };
+function drawSheet(kind) {
+  const s = $('sheet'), by = {};
+  for (const p of learned) (by[p.kind || 'other'] ||= []).push(p);
+  s.innerHTML = `<header>${FACE}<div><h2>What ${AI} has learned from you</h2><p>Every part you boxed, sorted by what it is. ${AI} pulls from here when making something new.</p></div><button class="close" id="closeSheet">Back<kbd>Esc</kbd></button></header>`
+    + Object.keys(KIND).filter(k => by[k]).map(k => `<h3>${KIND[k]}</h3><div class="shelf">` + by[k].map(p =>
+      `<button class="part" data-item="${p.item}" data-point="${p.point}"><div class="crop" style="background-image:url(/api/taste/${p.item}/points/${p.point}/crop)"></div><div class="w">${p.his ? `<p class="h">${esc(p.his)}</p>` : ''}${p.read ? `<p class="o">${esc(p.read)}</p>` : ''}<small>${esc(p.title || '')}${p.agreed ? ' · you agreed' : ''}</small></div></button>`).join('') + `</div>`).join('');
+  $('closeSheet').onclick = () => s.classList.remove('on');
+  s.querySelectorAll('.part').forEach(b => b.onclick = () => { s.classList.remove('on'); open(b.dataset.item); active = b.dataset.point; });
+  s.classList.add('on');
+  if (typeof kind === 'string') { const h = [...s.querySelectorAll('h3')].find(x => x.textContent === KIND[kind]); h?.scrollIntoView({ block: 'start' }); }
+}
+
+$('send').onclick = async () => {
+  const r = await api('/send', 'POST', {}); if (!r.ok) return toast("That didn't send, try again");
+  const { sent } = await r.json(); toast(sent ? `Sent ${sent} to ${AI} ✓` : 'Nothing to send'); load();
+};
+
+// ---- saving his own: paste, drop, or pick ----
+const asDataUrl = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(f); });
+const size = src => new Promise(ok => { const i = new Image(); i.onload = () => ok([i.naturalWidth, i.naturalHeight]); i.onerror = () => ok([null, null]); i.src = src; });
+async function saveFiles(files) {
+  const pics = [...files].filter(f => f.type.startsWith('image/'));
+  if (!pics.length) return toast("That wasn't a picture");
+  let last = null;
+  for (const f of pics) {
+    const data = await asDataUrl(f), [w, h] = await size(data);
+    const r = await api('', 'POST', { image: data, from: { how: 'paste', w, h } });
+    if (!r.ok) { toast("Couldn't save that one"); continue; }
+    last = await r.json(); all.unshift(last);
+  }
+  if (last) { open(last.id); toast('Saved ✓ Now box the part you like.'); }
+}
+$('add').onclick = () => $('pick').click();
+$('pick').onchange = e => { saveFiles(e.target.files); e.target.value = ''; };
+document.addEventListener('paste', e => { const files = e.clipboardData?.files; if (files && files.length) { e.preventDefault(); saveFiles(files); } });
+let dragDepth = 0;
+document.addEventListener('dragenter', e => { if ([...e.dataTransfer.types].includes('Files')) { dragDepth++; document.body.classList.add('dragging'); } });
+document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); if (e.dataTransfer.files.length) saveFiles(e.dataTransfer.files); });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('sheet').classList.contains('on')) return $('sheet').classList.remove('on');
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase(), order = [...mine(), ...brought()], i = order.findIndex(x => x.id === cur);
+  if (k === 'arrowdown' || k === 'arrowright') { e.preventDefault(); if (order[i + 1]) open(order[i + 1].id); }
+  else if (k === 'arrowup' || k === 'arrowleft') { e.preventDefault(); if (order[i - 1]) open(order[i - 1].id); }
+  else if (item()?.status === 'inbox' && k === 'k') decide(true);
+  else if (item()?.status === 'inbox' && k === 'x') decide(false);
+  else if (k === 'escape' && active) { active = null; drawParts(); }
+  else if (e.altKey && k === 'q' && unsent()) { e.preventDefault(); $('send').click(); }
+});
+let rz = null; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const im = document.querySelector('.pic'); if (im) { fit(im); drawParts(); } }, 120); });
+
+// New things show up by themselves: my reads, a picture saved from the glass.
+try { const ev = new EventSource('/api/events'); ev.addEventListener('taste', () => load()); } catch {}
+setInterval(() => { if (!document.hidden) load(); }, 20000);
+who().then(() => load(true));
+</script>
+</body>
+</html>
