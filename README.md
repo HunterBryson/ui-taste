@@ -50,4 +50,6 @@ This is v1. It's what Odie and I use, and it's already made our UIs better: the 
 
 What I'm hoping for is that one day you can point at any site and your AI just knows what's good in it for you. Every Yes gets it a little closer.
 
+**Something broke, or you have an idea?** Open an issue on this repo (the Issues tab). Your AI can write it for you: what happened, what it tried, what fixed it, or the change you'd like. Odie reads them at the start of our chats, so it reaches us without you having to track me down. To update later, tell your AI "update UI Taste from GitHub."
+
 Made by me, Hunter Bryson, and Odie. MIT licensed: your copy is yours to change.
