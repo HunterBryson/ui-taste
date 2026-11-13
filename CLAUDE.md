@@ -11,15 +11,13 @@ Why it matters: people can't put taste into words, and we all default to the sam
 Do these in order. The person's only part is pasting the line they already pasted, and maybe one design.
 
 0. **Their own computer only.** This keeps a local server and a folder of pictures. If you're in a cloud or web session (`CLAUDE_CODE_REMOTE` is set, or your home is `/home/user` on Linux), stop and tell them in plain words: it needs the Claude app on their own computer, Code tab.
-1. **Node 18 or newer.** `node -v`. Then `node -e "console.log(process.execPath)"` has to end in `node.exe` (Windows) or `node`. Some setups put a different program on `node` (it can even report a Node version). If yours does, find the real one (`where.exe node`, or `C:Program Files
-odejs
-ode.exe`) and run every command in this file with that full path instead of `node`; doctor checks this too. If Node is missing, install the LTS from nodejs.org (or `winget install OpenJS.NodeJS.LTS` on Windows) and tell them a box may ask for permission.
+1. **Node 18 or newer.** `node -v`. Then `node -e "console.log(process.execPath)"` has to end in `node.exe` (Windows) or `node`. Some setups put a different program on `node` (it can even report a Node version). If yours does, find the real one (`where.exe node`, or `C:\Program Files\nodejs\node.exe`) and run every command in this file with that full path instead of `node`; doctor checks this too. If Node is missing, install the LTS from nodejs.org (or `winget install OpenJS.NodeJS.LTS` on Windows) and tell them a box may ask for permission.
 2. **Clone it beside, never inside, another repo.** `git clone https://github.com/HunterBryson/ui-taste "%USERPROFILE%\ui-taste"` on Windows, `~/ui-taste` on a Mac. If you keep your memory in a git folder, do not clone into it: your next commit would sweep their pictures in. If a `ui-taste` folder is already there, look before you touch it: it may already hold their designs (`data/taste/`). Then `git pull` instead.
 3. **Make it yours.** Write `ui-taste.config.json` in the clone:
    ```json
    { "ai": { "name": "<your name>", "picture": "<a full path to your picture, or leave it out>" }, "person": { "name": "<their first name>" } }
    ```
-   Use the name your person calls you. A picture is optional; without one your first letter is your face. Don't ask them for any of this if you already know it.
+   Use the name your person calls you. A picture is optional (png, jpg or webp); without one your first letter is your face. **Write paths with forward slashes** (`C:/Users/...`): a single backslash breaks JSON. Don't ask them for any of this if you already know it. If you change the config later, run `restart`; an open page picks it up by itself.
 4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. Then `node tools/taste.mjs open`. It starts the server (port 7960 unless you set another) and opens the page in its own window on their screen, so tell them it's coming.
 5. **Hook it into what they already have** (skip what they don't use):
    - **Homebase** (a `the-homebase` folder, usually beside this one): add one item to the "Built for you" group in its `data/nav.json` (make the file from `nav.suggested.json` if it isn't there):
@@ -56,9 +54,9 @@ How to say it back:
 
 This is what it's all for.
 
-1. `learned` (or `learned layout`, `learned colors`...). Read the crops that fit the job, and their words on each.
+1. `learned` (or `learned layout`, `learned colors`...): every part they said Yes to, with their words, how they steered you, and the crop. Read the crops that fit the job.
 2. Build from those parts, not from your idea of a web app. When you show your first version, say which parts you took from where: "the header is from the Railway nav you agreed to." Then they can see the link, and correct your read.
-3. `used <design> "what you built"` on each design you drew from. It shows on that design's page ("Used in ..."), so they can see their taste being used without having to ask.
+3. Once you've built it, `used <design> "what you built"` on each design you drew from. It shows on that design's page ("Used in ..."), so they can see their taste being used without having to ask.
 4. If nothing fits the job yet, say so, and bring them two or three real designs for that kind of page (`bring`) to keep or clear first.
 
 ## When something's off

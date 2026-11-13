@@ -170,6 +170,10 @@
   body.dragging .drop { display: grid; }
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 12px 22px; border-radius: 24px; background: #20232a; border: 1px solid var(--line); font-size: 16px; display: none; z-index: 40; }
 
+  /* a narrower screen: the tiles keep their names and drop their pictures */
+  @media (max-width: 1750px) { .kt .ic { display: none; } .kt { padding: 0 14px; } .top { gap: 20px; } .tag { font-size: 15px; } }
+  @media (max-width: 1400px) { .tag { display: none; } .send { min-width: 0; } }
+
   /* a phone: the same things, stacked, and the parts as a list under the picture */
   @media (max-width: 900px) {
     html, body { overflow: auto; height: auto; }
@@ -602,7 +606,8 @@ document.addEventListener('keydown', e => {
 let rz = null; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { const im = document.querySelector('.pic'); if (im) { fit(im); drawParts(); } }, 120); });
 
 // New things show up by themselves: my reads, a picture saved from the glass.
-try { const ev = new EventSource('/api/events'); ev.addEventListener('taste', () => load()); } catch {}
+// After the server restarts (a new name or picture in the config), the stream reconnects: read who we are again.
+try { const ev = new EventSource('/api/events'); let opened = false; ev.addEventListener('taste', () => load()); ev.onopen = () => { if (opened) who().then(() => load(true)); opened = true; }; } catch {}
 setInterval(() => { if (!document.hidden) load(); }, 20000);
 who().then(() => load(true));
 </script>

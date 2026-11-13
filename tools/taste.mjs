@@ -11,7 +11,7 @@
 //   guess <design> x,y,w,h "what I think you like here" [--kind k]
 //                                     go first: box a part yourself (0..1 of the picture) and ask
 //   take <design> "what I take from this one"   ·   title <design> "Linear"   ·   used <design> "the settings page"
-//   learned [kind]                    everything they boxed with words or said Yes to, by kind, with crop paths. Pull this before any UI.
+//   learned [kind]                    every part they said Yes to, by kind, with their words, their steering and the crop. Pull this before any UI.
 //   bring <image file> "why I brought it" [--title t] [--url u]      a design for them to keep or clear
 //   list [kept|inbox]                 every design
 //   watch                             one line each time they press ➤ Send (for a background watch; optional)
@@ -36,6 +36,7 @@ const PORT = +(process.env.UI_TASTE_PORT || cfg.port || 7960);
 const BASE = `http://127.0.0.1:${PORT}`;
 const DATA = path.resolve(ROOT, cfg.data || 'data');
 const opt = k => { const i = a.indexOf(k); if (i < 0) return null; const v = a[i + 1]; a.splice(i, 2); return v; };
+const NODE = /^node(.exe)?$/i.test(path.basename(process.execPath)) ? 'node' : '"' + process.execPath + '"';
 const same = p => path.resolve(p || '').toLowerCase() === ROOT.toLowerCase();
 
 // Who answers on our port: nothing (null), this copy, another copy of UI Taste ({ elsewhere }), or another program ({ other }).
@@ -57,7 +58,7 @@ async function up(quiet) {
   const child = spawn(process.execPath, [path.join(ROOT, 'server.js')], { cwd: ROOT, detached: true, stdio: ['ignore', out, out], windowsHide: true });
   child.unref();
   for (let i = 0; i < 40; i++) { await new Promise(r => setTimeout(r, 150)); const w2 = await whoami(); if (w2 && !w2.other && !w2.elsewhere) return w2; if (w2) break; }
-  if (!quiet) fail(`UI Taste didn't start. The last lines of ${path.join(DATA, 'server.log')} say why; "node tools/taste.mjs doctor" checks the rest.`); else process.exitCode = 1;
+  if (!quiet) fail(`UI Taste didn't start. The last lines of ${path.join(DATA, 'server.log')} say why; "${NODE} tools/taste.mjs doctor" checks the rest.`); else process.exitCode = 1;
   return null;
 }
 const j = async (p, method, body) => {
@@ -90,7 +91,7 @@ function openPage(url) {
 if (cmd === 'start' || cmd === 'status') {
   const w = cmd === 'start' ? await up() : await whoami();
   if (w && !w.other && !w.elsewhere) say(`UI Taste is running: ${BASE}/  (pid ${w.pid}, designs in ${w.data})`);
-  else if (cmd === 'status') say(w ? portTaken(w) : 'UI Taste is not running. "node tools/taste.mjs start" starts it.');
+  else if (cmd === 'status') { if (w) fail(portTaken(w)); else say(`UI Taste is not running. "${NODE} tools/taste.mjs start" starts it.`); }
 } else if (cmd === 'stop' || cmd === 'restart') {
   // Only ever stops this folder's copy: another copy on the same port is someone's designs.
   const w = await whoami();
@@ -113,7 +114,7 @@ if (cmd === 'start' || cmd === 'status') {
 } else if (cmd === 'waiting') {
   const w = (await j('/waiting', 'GET')); if (!w) process.exit(); const d = await all();
   if (!w.waiting.length) say(`Nothing waiting on you in UI Taste.${w.unsent ? ` (${w.unsent} drafted on the page but not sent yet: they press ➤ Send when they're ready.)` : ''}`);
-  for (const x of w.waiting) say(`${x.why === 'new' ? 'THEY BOXED A PART' : 'NOT QUITE'} on "${x.title || 'Untitled'}"  (${x.item} ${x.point})\n  their words: ${x.his || '(none, just the box)'}${x.read ? `\n  what you had said: ${x.read}${x.hisFirst ? `\n  their first words: ${x.hisFirst}` : ''}` : ''}\n  the part: ${cropPath(d, x)}\n  the whole picture: ${path.join(d.dir, find(d, x.item).file)}\n  answer: node tools/taste.mjs read ${x.item.slice(-4)} ${x.point} "what you see, as a short question" --kind <kind>`);
+  for (const x of w.waiting) say(`${x.why === 'new' ? 'THEY BOXED A PART' : 'NOT QUITE'} on "${x.title || 'Untitled'}"  (${x.item} ${x.point})\n  their words: ${x.his || '(none, just the box)'}${x.read ? `\n  what you had said: ${x.read}${x.hisFirst ? `\n  their first words: ${x.hisFirst}` : ''}` : ''}\n  the part: ${cropPath(d, x)}\n  the whole picture: ${path.join(d.dir, find(d, x.item).file)}\n  answer: ${NODE} tools/taste.mjs read ${x.item.slice(-4)} ${x.point} "what you see, as a short question" --kind <kind>${x.why === 'not quite' ? '  (add --box x,y,w,h if their words point at a different part)' : ''}`);
 } else if (cmd === 'see') {
   const d = await all(); if (!d) process.exit(); const it = find(d, a[0]); if (!it) { fail('No design like that. "list" shows them all.'); process.exit(); }
   say(`${name(it)}  (${it.id}, ${it.status === 'inbox' ? 'you brought it, waiting on their keep or clear' : 'theirs'})\n  picture: ${path.join(d.dir, it.file)}\n  their line: ${it.note || '—'}\n  your take: ${it.take || '—'}${it.why ? `\n  why you brought it: ${it.why}` : ''}${(it.used || []).length ? `\n  used in: ${it.used.map(u => u.what).join(', ')}` : ''}`);
@@ -161,22 +162,22 @@ if (cmd === 'start' || cmd === 'status') {
   }
 } else if (cmd === 'doctor') {
   const ok = s => say('  ✓ ' + s), bad = (s, fix) => { say('  ✗ ' + s + '\n      fix: ' + fix); process.exitCode = 1; };
-  say('UI Taste doctor');
+  say('UI Taste doctor'); let startFailed = false;
   const major = +process.versions.node.split('.')[0];
   if (major >= 18) ok(`Node ${process.version}${major > 24 ? ' (newer than any we tested on; tell your person if something odd happens)' : ''}`); else bad(`Node ${process.version} is too old`, 'install Node 18 or newer from nodejs.org');
   const exe = path.basename(process.execPath).toLowerCase();
   if (exe !== 'node.exe' && exe !== 'node') bad(`"node" here is really ${process.execPath}, a different program`, `run every command with the real Node by its full path, e.g. "C:\\Program Files\\nodejs\\node.exe" tools/taste.mjs doctor (where.exe node lists them all)`);
-  if (cfgError) { bad(`ui-taste.config.json isn't valid JSON (${cfgError})`, `fix ${cfgFile} (a stray comma or quote, usually), or cut it down to {}. Nothing else runs until it's fixed.`); process.exit(); }
+  if (cfgError) { bad(`ui-taste.config.json isn't valid JSON (${cfgError})`, `fix ${cfgFile} (usually a single backslash in a path: write paths with forward slashes, C:/Users/...; or a stray comma or quote), or cut it down to {}. Nothing else runs until it's fixed.`); process.exit(); }
   if (fs.existsSync(cfgFile)) ok(`config: ${cfgFile}`);
   else say('  · no ui-taste.config.json yet: the AI is called "Claude" with its first letter as its face. Setup step 3 makes one.');
-  if (cfg.ai?.picture) { const pic = path.resolve(ROOT, cfg.ai.picture); fs.existsSync(pic) ? ok(`picture: ${pic}`) : bad(`the picture isn't there: ${pic}`, 'fix "ai.picture" in the config (a png or jpg), or remove it to use the letter'); }
+  if (cfg.ai?.picture) { const pic = path.resolve(ROOT, cfg.ai.picture); fs.existsSync(pic) ? ok(`picture: ${pic}`) : bad(`the picture isn't there: ${pic}`, 'fix "ai.picture" in the config (a png, jpg or webp), or remove it to use the letter'); }
   try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(path.join(DATA, '.write-test'), 'x'); fs.unlinkSync(path.join(DATA, '.write-test')); ok(`can write designs to ${DATA}`); } catch (e) { bad(`can't write to ${DATA}: ${e.message}`, 'set "data" in the config to a folder you can write to'); }
   const w = await whoami();
   if (w?.other) bad(`another program is answering on port ${PORT}`, `set "port" in ${cfgFile} to a free one (7961, say), then "start"`);
   else if (w?.elsewhere) bad(`port ${PORT} is UI Taste running from another folder: ${w.root}`, `if that's an old copy you moved, run "node tools/taste.mjs stop" in that folder, then "start" here. If it's a second copy on purpose, give this one its own "port"`);
   else if (w) ok(`running: ${BASE}/ (pid ${w.pid})`);
-  else { const started = await up(true); started ? ok(`it wasn't running, started it: ${BASE}/`) : bad('it would not start', `read the end of ${path.join(DATA, 'server.log')} (below)`); }
+  else { const started = await up(true); if (!started) startFailed = true; started ? ok(`it wasn't running, started it: ${BASE}/`) : bad('it would not start', `read the end of ${path.join(DATA, 'server.log')} (below)`); }
   if (w && !w.other && !w.elsewhere || !w) { try { const r = await fetch(BASE + '/api/taste'); const d = await r.json(); ok(`${d.items.length} design${d.items.length === 1 ? '' : 's'}, ${d.items.reduce((n, x) => n + (x.points || []).length, 0)} parts`); } catch {} }
-  const log = path.join(DATA, 'server.log'); if (process.exitCode && fs.existsSync(log)) { const last = fs.readFileSync(log, 'utf8').trim().split('\n').slice(-3); say('  last lines of the log:\n' + last.map(l => '      ' + l).join('\n')); }
+  const log = path.join(DATA, 'server.log'); if (startFailed && fs.existsSync(log)) { const last = fs.readFileSync(log, 'utf8').trim().split('\n').slice(-3); say('  last lines of the log:\n' + last.map(l => '      ' + l).join('\n')); }
   if (!process.exitCode) say('All good.');
 } else fail(`${cmd ? `"${cmd}" isn't a command. ` : ''}taste.mjs open | add | waiting | see | read | guess | take | used | title | learned | bring | list | watch | start | stop | restart | status | doctor   (the top of this file says how)`);
