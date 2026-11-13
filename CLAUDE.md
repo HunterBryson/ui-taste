@@ -11,19 +11,21 @@ Why it matters: people can't put taste into words, and we all default to the sam
 Do these in order. The person's only part is pasting the line they already pasted, and maybe one design.
 
 0. **Their own computer only.** This keeps a local server and a folder of pictures. If you're in a cloud or web session (`CLAUDE_CODE_REMOTE` is set, or your home is `/home/user` on Linux), stop and tell them in plain words: it needs the Claude app on their own computer, Code tab.
-1. **Node 18 or newer.** `node -v`. Then `node -e "console.log(process.execPath)"` has to end in `node.exe` (Windows) or `node`; some setups put a different program on `node`, and then every command here would launch that instead. If Node is missing, install the LTS from nodejs.org (or `winget install OpenJS.NodeJS.LTS` on Windows) and tell them a box may ask for permission.
+1. **Node 18 or newer.** `node -v`. Then `node -e "console.log(process.execPath)"` has to end in `node.exe` (Windows) or `node`. Some setups put a different program on `node` (it can even report a Node version). If yours does, find the real one (`where.exe node`, or `C:Program Files
+odejs
+ode.exe`) and run every command in this file with that full path instead of `node`; doctor checks this too. If Node is missing, install the LTS from nodejs.org (or `winget install OpenJS.NodeJS.LTS` on Windows) and tell them a box may ask for permission.
 2. **Clone it beside, never inside, another repo.** `git clone https://github.com/HunterBryson/ui-taste "%USERPROFILE%\ui-taste"` on Windows, `~/ui-taste` on a Mac. If you keep your memory in a git folder, do not clone into it: your next commit would sweep their pictures in. If a `ui-taste` folder is already there, look before you touch it: it may already hold their designs (`data/taste/`). Then `git pull` instead.
 3. **Make it yours.** Write `ui-taste.config.json` in the clone:
    ```json
    { "ai": { "name": "<your name>", "picture": "<a full path to your picture, or leave it out>" }, "person": { "name": "<their first name>" } }
    ```
    Use the name your person calls you. A picture is optional; without one your first letter is your face. Don't ask them for any of this if you already know it.
-4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. Then `node tools/taste.mjs open`. It starts the server (port 7960) and opens the page in its own window.
+4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. Then `node tools/taste.mjs open`. It starts the server (port 7960 unless you set another) and opens the page in its own window on their screen, so tell them it's coming.
 5. **Hook it into what they already have** (skip what they don't use):
    - **Homebase** (a `the-homebase` folder, usually beside this one): add one item to the "Built for you" group in its `data/nav.json` (make the file from `nav.suggested.json` if it isn't there):
-     `{ "name": "UI Taste", "sub": "Box what you like. <your name> learns it.", "url": "http://127.0.0.1:7960/", "icon": "star" }`
-   - **The glass** (`the-glass`): ♥ Taste in its note box saves what they box on their screen straight into UI Taste. Set `GLASS_TASTE_URL` to `http://127.0.0.1:7960` the same way the glass's own settings are set (its CLAUDE.md, `"env"` in `.claude/settings.json`), then `node tools/glass.js restart`. If your app won't let you change settings, hand your person the exact line to add and say why.
-6. **Go first: show them on a design they like.** Ask them for one: "Paste me a screenshot of an app or site whose look you like (Ctrl+V right on the page), or tell me one and I'll grab it." If you can take a screenshot of a site yourself, `node tools/taste.mjs bring <file> "why I picked it" --title "Name"` puts it under "brought these" for them to keep. Then:
+     `{ "name": "UI Taste", "sub": "Box what you like. <your name> learns it.", "url": "http://127.0.0.1:<your port>/", "icon": "star" }`
+   - **The glass** (`the-glass`): ♥ Taste in its note box saves what they box on their screen straight into UI Taste. Set `GLASS_TASTE_URL` to `http://127.0.0.1:<your port>` the same way the glass's own settings are set: `"env"` in the `.claude/settings.json` of the folder you run the glass from (its CLAUDE.md shows it), then `node tools/glass.js restart`. If your app won't let you change settings, hand your person the exact line to add and say why.
+6. **Go first: show them on a design they like.** Ask them for one: "Paste me a screenshot of an app or site whose look you like (Ctrl+V right on the page), or tell me one and I'll grab it." If they give you a file, or ask you to grab a site and you can screenshot it, `node tools/taste.mjs add <file> "their words" --title "Name"` saves it as theirs. (`bring` is for designs you pick yourself: they land under "brought these" for them to keep or clear.) Then:
    - Look at the picture (`node tools/taste.mjs see <design>` prints its path; read the file).
    - Box the part you think they'd like and ask: `node tools/taste.mjs guess <design> x,y,w,h "what I think you like here, as a question" --kind <kind>` (x,y,w,h are 0..1 of the picture). It shows on their page right away.
    - Tell them in a line: "I boxed the part I think you like. Tap Yes if I'm right, or Not quite and tell me."
@@ -44,7 +46,7 @@ How to say it back:
 - **Name what's actually in the crop**: the spacing, the size, the color, the shape, how few things there are. That's what makes Yes mean something.
 - **Pick the kind**: layout (where things sit), navigation (how you move around), buttons (things you press), colors, type (letters), feel (the mood of the whole).
 
-**When they say Not quite**, `waiting` shows their new words and what you'd said before. Try again with their words in front of you; `read` again on the same part replaces your read and keeps the old one as a try. They meant something real, and their words usually say what.
+**When they say Not quite**, `waiting` shows their new words and what you'd said before. Try again with their words in front of you; `read` again on the same part replaces your read and keeps the old one as a try. They meant something real, and their words usually say what. **If their words point at a different part of the picture than the box** ("no, the cards at the bottom"), move the box with your read: `read <design> <part> "..." --box x,y,w,h`, so what gets learned is the part they meant. Their steering stays with the part and shows in `learned`.
 
 **Going first** (`guess`) is welcome any time you see a part you think they'd like, especially on designs you bring them. It's how they find out you're actually looking.
 
@@ -68,13 +70,15 @@ Before you fix anything, make it happen again on purpose, and look at the page i
 | What they see | Usually | Fix |
 |---|---|---|
 | The page won't load | the server isn't running (after a restart, it isn't, until a command starts it) | `node tools/taste.mjs open` |
-| "Something else is on port 7960" | another program holds the port | `"port": 7961` (any free one) in `ui-taste.config.json`; update the Homebase link and `GLASS_TASTE_URL` to match |
+| "Another program is using port 7960" | another program holds the port | `"port": 7961` (any free one) in `ui-taste.config.json`, then `restart`; update the Homebase link and `GLASS_TASTE_URL` to match |
+| "Port … is UI Taste running from another folder" | an old copy they moved, or a second copy | `stop` from that folder (it only stops its own copy), then `start` here; or give this copy its own port |
+| "isn't valid JSON" | a typo in `ui-taste.config.json` | fix the file; nothing starts until it's valid, so no stray second copy |
+| You changed the config and nothing changed | the server reads it when it starts | `restart` |
 | The Homebase link opens nothing | UI Taste isn't running, or the port changed | `open`, and check the link's port |
 | ♥ Taste on the glass says it didn't reach UI Taste | UI Taste isn't running, or `GLASS_TASTE_URL` is wrong | `start`, check the URL, `glass.js restart` |
 | A crop path says "not cut yet" | crops are cut by the page itself, and it hasn't been open since that part was made | `open` (it cuts them in a second), or read the whole picture at the box it prints |
 | Your read doesn't show on the page | the page missed an update | it refreshes itself; if not, reload it (F5) |
 | Your picture doesn't show | `ai.picture` path is wrong | doctor says which; fix the path |
-| A second copy is running from another folder | they moved it | doctor names it: `stop` from there, `start` here |
 
 ## Your copy is yours
 

@@ -458,12 +458,13 @@ function wire(el, p) {
     else if (e.key === 'Escape') { editing = null; drawParts(); } }; }
 }
 // Every part needs its crop (the AI reads it, the header tiles show it). The page cuts any that are missing.
-const cutting = new Set();
+const cutting = new Set();   // by part and box, so a moved box gets a new crop
+const ck = p => p.id + JSON.stringify(p.box);
 async function crops() {
   for (const it of all) {
-    const need = (it.points || []).filter(p => !p.crop && !cutting.has(p.id));
+    const need = (it.points || []).filter(p => !p.crop && !cutting.has(ck(p)));
     if (!need.length) continue;
-    need.forEach(p => cutting.add(p.id));
+    need.forEach(p => cutting.add(ck(p)));
     const im = await new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = img(it); });
     if (!im) continue;
     for (const p of need) {
@@ -472,7 +473,7 @@ async function crops() {
       const sx = Math.round(x0 * W), sy = Math.round(y0 * H); c.width = Math.max(8, Math.round((x1 - x0) * W)); c.height = Math.max(8, Math.round((y1 - y0) * H));
       c.getContext('2d').drawImage(im, sx, sy, c.width, c.height, 0, 0, c.width, c.height);
       const r = await api(`/${it.id}/points/${p.id}/crop`, 'PUT', { image: c.toDataURL('image/png') }).catch(() => null);
-      if (r?.ok) p.crop = true; else cutting.delete(p.id);
+      if (r?.ok) p.crop = true; else cutting.delete(ck(p));
     }
   }
 }
