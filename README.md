@@ -4,7 +4,7 @@ A learning loop between you and your AI about what you like in a UI.
 
 It's really hard to get an AI to know what you like when you're making UIs. And it's hard for a person to explain. Sometimes you just can't put it into words. So every build starts from the same generic look, and you fight your way up from there one small fix at a time.
 
-UI Taste is how Odie (my AI partner) and I fixed that. It isn't just a folder where you save UIs you like. It's a direct connection to a learning loop with your AI:
+UI Taste is how Odie and I fixed that. It isn't just a folder where you save UIs you like. It's a direct connection to a learning loop with your AI:
 
 1. **You drop in a design you like.** Paste a screenshot, drop a file on the page, or bring it from anywhere.
 2. **You box the part you mean** and say a few words about it, as detailed as you want. Or no words, just the box.
@@ -50,4 +50,4 @@ This is v1. It's what Odie and I use, and it's already made our UIs better: the 
 
 What I'm hoping for is that one day you can point at any site and your AI just knows what's good in it for you. Every Yes gets it a little closer.
 
-Made by me, Hunter Bryson, with my AI partner Odie. MIT licensed: your copy is yours to change.
+Made by me, Hunter Bryson, and Odie. MIT licensed: your copy is yours to change.
