@@ -22,7 +22,7 @@ Built with Claude, and it works best with Claude.
 
 ![Two of Odie's guesses on a trading screen: one I agreed with, one waiting on Yes or Not quite](docs/1-guesses.webp)
 
-**And when it's wrong, you just say so.** It thought I meant the chart gets the most room. I meant I want to actually see the graphs, with my eyeballs. It looks again.
+**When it's off the mark, you steer it.** Sort of. You can even mess with it a little and tell it you mean with your human eyeballs. It'll look again anyway.
 
 ![My Not quite on Odie's guess: "No, I mean with my eyeballs fella!"](docs/2-eyeballs.webp)
 
