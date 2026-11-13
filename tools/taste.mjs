@@ -36,7 +36,8 @@ const PORT = +(process.env.UI_TASTE_PORT || cfg.port || 7960);
 const BASE = `http://127.0.0.1:${PORT}`;
 const DATA = path.resolve(ROOT, cfg.data || 'data');
 const opt = k => { const i = a.indexOf(k); if (i < 0) return null; const v = a[i + 1]; a.splice(i, 2); return v; };
-const NODE = /^node(.exe)?$/i.test(path.basename(process.execPath)) ? 'node' : '"' + process.execPath + '"';
+// The Node to print in hints: the exact one running now, so a copied hint works even where plain 'node' is another program.
+const NODE = process.platform === 'win32' && /s/.test(process.execPath) ? '"' + process.execPath + '"' : process.execPath;
 const same = p => path.resolve(p || '').toLowerCase() === ROOT.toLowerCase();
 
 // Who answers on our port: nothing (null), this copy, another copy of UI Taste ({ elsewhere }), or another program ({ other }).
