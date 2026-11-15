@@ -309,7 +309,9 @@ if (cmd === 'start' || cmd === 'status') {
   // The glass is optional; when it's there, its ♥ Taste needs GLASS_TASTE_URL pointing here.
   let gUrl = process.env.GLASS_TASTE_URL || '', gWhere = gUrl ? 'this shell' : '';
   if (!gUrl) { try { gUrl = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', 'settings.json'), 'utf8'))?.env?.GLASS_TASTE_URL || ''; if (gUrl) gWhere = '~/.claude/settings.json'; } catch {} }
-  if (!gUrl) warn(`the glass's ♥ Taste isn't pointed at UI Taste (no GLASS_TASTE_URL). Fine if they don't use the glass.`, `${NODE} "${path.join(ROOT, 'tools', 'fit.mjs')}" --settings sets it, then glass.js restart`);
+  const glassHere = [path.join(ROOT, '..', 'the-glass'), path.join(os.homedir(), 'the-glass')].some(d => fs.existsSync(path.join(d, 'tools', 'glass.js')));
+  if (!gUrl && !glassHere) ok(`no glass on this computer, so nothing to point at UI Taste (fine: it's optional)`);
+  else if (!gUrl) warn(`the glass's ♥ Taste isn't pointed at UI Taste (no GLASS_TASTE_URL). Fine if they don't use the glass.`, `${NODE} "${path.join(ROOT, 'tools', 'fit.mjs')}" --settings sets it, then glass.js restart`);
   else if (gUrl.replace(/\/+$/, '') !== BASE && gUrl.replace(/\/+$/, '') !== `http://localhost:${PORT}`) warn(`GLASS_TASTE_URL is ${gUrl} (in ${gWhere}), but this UI Taste is on ${BASE}`, `change it to ${BASE} in ~/.claude/settings.json, then glass.js restart`);
   else ok(`the glass's ♥ Taste points here (GLASS_TASTE_URL, in ${gWhere})`);
   // The skill: so every chat knows the moves, not only chats opened in this folder.

@@ -214,7 +214,7 @@
 
   .drop { position: fixed; inset: 0; display: none; place-items: center; background: rgba(12,13,16,.9); border: 3px dashed var(--him); font-size: 28px; z-index: 30; }
   body.dragging .drop { display: grid; }
-  .offline { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 50; padding: 12px 22px; border-radius: 14px; background: #3a1512; border: 2px solid var(--no); color: #ffd9d4; font-size: 16px; }
+  .offline { position: fixed; left: 50%; top: 142px; transform: translateX(-50%); z-index: 50; padding: 12px 22px; border-radius: 14px; background: #3a1512; border: 2px solid var(--no); color: #ffd9d4; font-size: 16px; }
   .offline[hidden] { display: none; }
   .toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); padding: 12px 22px; border-radius: 24px; background: #20232a; border: 1px solid var(--line); font-size: 16px; display: none; z-index: 40; }
 
@@ -362,7 +362,7 @@ function drawTop() {
     t.innerHTML = !all.length ? `<p class="first"><b>Start here:</b> paste a design you like (Ctrl+V), then box the part you mean.</p>`
       : !anyParts ? `<p class="first"><b>Next:</b> drag a box around a part you like, say a word or two, then press ➤ Send.</p>`
       : learned.length ? `<p class="first">${learned.length} part${learned.length === 1 ? '' : 's'} so far, not sorted into a kind yet. ${esc(AI)} sorts them as it reads them.</p>`
-      : `<p class="first">Nothing learned yet. Press ➤ Send when you're ready, and answer ${esc(AI)}'s questions with Yes or Not quite.</p>`;
+      : `<p class="first">Nothing learned yet. Box a part you like (or answer ${esc(AI)}'s question with Yes or Not quite), then press ➤ Send.</p>`;
   }
   for (const [k, label, n] of got) {
     const b = document.createElement('button'); b.className = 'kt' + (mode === k ? ' on' : '');
@@ -378,9 +378,9 @@ function drawTop() {
   need.onclick = () => { const o = openReads()[0]; if (o) open(o.it.id, o.p.id); };
   const u = unsent(); $('send').classList.toggle('on', u > 0);
   $('send').querySelector('.a').innerHTML = `➤ Send to ${esc(AI)}${u ? ` · ${u}` : ''}`;
-  $('sendN').textContent = u ? `Saved. This tells ${AI}.` : 'Nothing to send yet';
+  $('sendN').textContent = u ? `${u} ready · press to tell ${AI}` : 'Nothing to send yet';
   $('send').title = u ? `Everything you did is already saved. This tells ${AI} (Alt+Q).` : `Box a part, or answer one of ${AI}'s questions, then send it here.`;
-  const n = learned.length;
+  const n = learned.filter(x => x.kind).length;   // the count matches the kinds shown; a part gets its kind when the AI reads it
   $('learnedN').textContent = n ? `· ${n} part${n === 1 ? '' : 's'}` : '';
   // Nothing learned yet: the first thing they read is what to do, not a heading about learning.
   document.querySelector('.map .lab').style.display = n ? '' : 'none';
