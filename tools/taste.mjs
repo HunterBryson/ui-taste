@@ -26,6 +26,7 @@
 //   watch                             one line each time they press ➤ Send, the moment they do (for a background watch; optional)
 //   skill [--remove]                  install the ui-taste skill into ~/.claude/skills/ui-taste with this clone's paths, so every chat
 //                                     knows the moves (--remove takes it back)
+//   import <old ui-taste folder>      bring an old copy's designs into this one, keeping everything already here (never copy the folder by hand)
 //   start · stop · restart · status · doctor    the server itself (restart after changing the config); doctor checks everything and says how to fix it
 //
 // <design> is its id, the last four characters of its id, or part of its name.
@@ -46,7 +47,9 @@ let cfg = {}, cfgError = null;
 if (fs.existsSync(cfgFile)) { try { cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); } catch (e) { cfgError = e.message; } }
 // The Node to print in hints: the exact one running now, so a copied hint works even where plain 'node' is another program.
 const q = p => process.platform === 'win32' && /\s/.test(p) ? '"' + p + '"' : p;
-const NODE = q(process.execPath);
+const realNode = /^node(\.exe)?$/i.test(path.basename(process.execPath));
+// Run through a wrapper (some setups put another program on 'node'), the running program isn't Node: hints name the real one instead.
+const NODE = realNode ? q(process.execPath) : (process.platform === 'win32' ? '"C:/Program Files/nodejs/node.exe"' : 'node');
 const RUN = `${NODE} ${q(SELF)}`;   // every hint names this: works from any folder
 if (cfgError && cmd !== 'doctor') { fail(`ui-taste.config.json isn't valid JSON (${cfgError}).\nFix it (${cfgFile}), then run this again. Nothing was started.`); process.exit(); }
 const PORT = +(process.env.UI_TASTE_PORT || cfg.port || 7960);
@@ -197,6 +200,34 @@ if (cmd === 'start' || cmd === 'status') {
 } else if (cmd === 'drop') {
   const got = await partOf('drop <design> <part>   (removes one part from a design)'); if (!got) return; const { it, p } = got;
   const r = await j(`/${it.id}/points/${p.id}`, 'DELETE'); if (r) say(`Removed part ${p.id} from "${name(it)}"${p.his ? ` (their words were: ${p.his})` : ''}.`);
+} else if (cmd === 'import') {
+  // An old copy's designs, brought into this one. Never a plain folder copy: that overwrites this copy's list.
+  const from = a[0];
+  if (!from) { fail(`import <the old ui-taste folder>   brings its designs, parts and crops into this copy, keeping everything here`); return; }
+  const src = [path.join(from, 'data', 'taste'), path.join(from, 'taste'), from].find(d => fs.existsSync(path.join(d, 'index.json')));
+  if (!src) { fail(`No designs found in ${from} (looked for data/taste/index.json).`); return; }
+  const dst = path.join(DATA, 'taste');
+  if (path.resolve(src).toLowerCase() === path.resolve(dst).toLowerCase()) { fail('That folder is this copy.'); return; }
+  const w = await whoami(); const wasUp = w && !w.other && !w.elsewhere;
+  if (wasUp) { try { process.kill(w.pid); for (let i = 0; i < 30 && await whoami(); i++) await new Promise(r => setTimeout(r, 100)); } catch (e) { fail(`Couldn't stop this copy first (pid ${w.pid}): ${e.message}`); return; } }
+  const readList = f => { try { const d = JSON.parse(fs.readFileSync(f, 'utf8')); return Array.isArray(d) ? d : []; } catch { return []; } };
+  fs.mkdirSync(path.join(dst, 'crops'), { recursive: true });
+  const mineFile = path.join(dst, 'index.json'), mine = readList(mineFile), theirs = readList(path.join(src, 'index.json'));
+  const backup = path.join(dst, `index.before-import-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  if (fs.existsSync(mineFile)) fs.copyFileSync(mineFile, backup);
+  const have = new Set(mine.map(x => x.id)); let n = 0;
+  const cp = (f, t) => { try { if (fs.existsSync(f) && !fs.existsSync(t)) fs.copyFileSync(f, t); } catch {} };
+  for (const it of theirs) {
+    if (have.has(it.id)) continue;
+    if (it.file) cp(path.join(src, it.file), path.join(dst, it.file));
+    for (const p of it.points || []) cp(path.join(src, 'crops', `${p.id}.png`), path.join(dst, 'crops', `${p.id}.png`));
+    mine.push(it); n++;
+  }
+  const goneFrom = path.join(src, 'removed');
+  if (fs.existsSync(goneFrom)) { fs.mkdirSync(path.join(dst, 'removed'), { recursive: true }); for (const f of fs.readdirSync(goneFrom)) cp(path.join(goneFrom, f), path.join(dst, 'removed', f)); }
+  fs.writeFileSync(mineFile + '.tmp', JSON.stringify(mine, null, 1)); fs.renameSync(mineFile + '.tmp', mineFile);
+  if (wasUp) await up();
+  say(`Brought over ${n} design${n === 1 ? '' : 's'} from ${src}${theirs.length - n ? ` (${theirs.length - n} already here, left as they were)` : ''}. This copy now has ${mine.length}.${fs.existsSync(backup) ? `\nIts list from before is kept at ${backup}.` : ''}\nThe old folder is untouched: stop it from its own folder if it's running, then rename it (don't delete it) and tell them where it is.`);
 } else if (cmd === 'remove') {
   const d = await all(); if (!d) return; const it = find(d, a[0]); if (!it) { fail('remove <design>   (sets it aside; restore <id> brings it back)'); return; }
   const r = await j('/' + it.id, 'DELETE'); if (r) say(`Set aside: "${name(it)}" (${it.id}), in ${path.join(d.dir, 'removed')}. Bring it back with ${RUN} restore ${it.id}`);
@@ -212,12 +243,12 @@ if (cmd === 'start' || cmd === 'status') {
 } else if (cmd === 'list') {
   if (a[0] === 'removed') {
     const rm = await j('/removed', 'GET'); if (!rm) return;
-    for (const it of rm.removed) say(`removed ${it.id}  ${name(it)} · ${(it.points || []).length} parts   (${RUN} restore ${it.id})`);
+    for (const it of rm.removed) say(`removed ${it.id}  ${name(it)} · ${(it.points || []).length} part${(it.points || []).length === 1 ? '' : 's'}   (${RUN} restore ${it.id})`);
     if (!rm.removed.length) say('Nothing set aside.');
   } else {
     const d = await all(); if (!d) return;
     const items = d.items.filter(x => !a[0] || x.status === a[0]);
-    for (const it of items) say(`${it.want ? 'BUILD  ' : it.status === 'inbox' ? 'brought' : 'theirs '} ${it.id}  ${name(it)} · ${(it.points || []).length} parts${it.ours ? ` · ours, ${it.ours === 'love' ? 'loved' : 'not liked'}` : ''}\n      ${path.join(d.dir, it.file)}\n      their line: ${it.note || '—'}${it.why ? `\n      why you brought it: ${it.why}` : ''}`);
+    for (const it of items) say(`${it.want ? 'BUILD  ' : it.status === 'inbox' ? 'brought' : 'theirs '} ${it.id}  ${name(it)} · ${(it.points || []).length} part${(it.points || []).length === 1 ? "" : "s"}${it.ours ? ` · ours, ${it.ours === 'love' ? 'loved' : 'not liked'}` : ''}\n      ${path.join(d.dir, it.file)}\n      their line: ${it.note || '—'}${it.why ? `\n      why you brought it: ${it.why}` : ''}`);
     if (!items.length) say(a[0] ? `None in ${a[0]}.` : 'No designs yet. They paste one into the page (Ctrl+V), drop one on it, or you bring one.');
   }
 } else if (cmd === 'watch') {
@@ -264,7 +295,7 @@ if (cmd === 'start' || cmd === 'status') {
   if (major >= 18) ok(`Node ${process.version}${major > 24 ? ' (newer than any we tested on; tell your person if something odd happens)' : ''}`); else bad(`Node ${process.version} is too old`, 'install Node 18 or newer from nodejs.org');
   const exe = path.basename(process.execPath).toLowerCase();
   if (exe !== 'node.exe' && exe !== 'node') bad(`"node" here is really ${process.execPath}, a different program`, `run every command with the real Node by its full path, e.g. "C:\\Program Files\\nodejs\\node.exe" "${SELF}" doctor (where.exe node lists them all)`);
-  if (cfgError) { bad(`ui-taste.config.json isn't valid JSON (${cfgError})`, `fix ${cfgFile} (usually a single backslash in a path: write paths with forward slashes, C:/Users/...; or a stray comma or quote), or cut it down to {}. Nothing else runs until it's fixed.`); return; }
+  if (cfgError) { bad(`ui-taste.config.json isn't valid JSON (${cfgError})`, `fix ${cfgFile} (usually a single backslash in a path: write paths with forward slashes, C:/Users/...; or a stray comma or quote). If it's beyond fixing, write it again from CLAUDE.md step 3's example, keeping "port" if it had one. Nothing else runs until it's fixed.`); return; }
   if (fs.existsSync(cfgFile)) ok(`config: ${cfgFile}`);
   else say('  · no ui-taste.config.json yet: the AI is called "Claude" with its first letter as its face. Setup step 3 makes one.');
   if (cfg.ai?.picture) { const pic = path.resolve(ROOT, cfg.ai.picture); fs.existsSync(pic) ? ok(`picture: ${pic}`) : bad(`the picture isn't there: ${pic}`, 'fix "ai.picture" in the config (a png, jpg or webp), or remove it to use the letter'); }
@@ -274,7 +305,7 @@ if (cmd === 'start' || cmd === 'status') {
   else if (w?.elsewhere) bad(`port ${PORT} is UI Taste running from another folder: ${w.root}`, `if that's an old copy you moved, run ${NODE} "${path.join(w.root, 'tools', 'taste.mjs')}" stop, then "start" here. If it's a second copy on purpose, give this one its own "port"`);
   else if (w) ok(`running: ${BASE}/ (pid ${w.pid})`);
   else { const started = await up(true); if (!started) startFailed = true; started ? ok(`it wasn't running, started it: ${BASE}/`) : bad('it would not start', `read the end of ${path.join(DATA, 'server.log')} (below)`); }
-  if (w && !w.other && !w.elsewhere || !w) { try { const r = await fetch(BASE + '/api/taste'); const d = await r.json(); ok(`${d.items.length} design${d.items.length === 1 ? '' : 's'}, ${d.items.reduce((n, x) => n + (x.points || []).length, 0)} parts`); } catch {} }
+  if (w && !w.other && !w.elsewhere || !w) { try { const r = await fetch(BASE + '/api/taste'); const d = await r.json(); { const np = d.items.reduce((n, x) => n + (x.points || []).length, 0); ok(`${d.items.length} design${d.items.length === 1 ? '' : 's'}, ${np} part${np === 1 ? '' : 's'}`); } } catch {} }
   // The glass is optional; when it's there, its ♥ Taste needs GLASS_TASTE_URL pointing here.
   let gUrl = process.env.GLASS_TASTE_URL || '', gWhere = gUrl ? 'this shell' : '';
   if (!gUrl) { try { gUrl = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.claude', 'settings.json'), 'utf8'))?.env?.GLASS_TASTE_URL || ''; if (gUrl) gWhere = '~/.claude/settings.json'; } catch {} }

@@ -214,7 +214,9 @@
 
   .drop { position: fixed; inset: 0; display: none; place-items: center; background: rgba(12,13,16,.9); border: 3px dashed var(--him); font-size: 28px; z-index: 30; }
   body.dragging .drop { display: grid; }
-  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 12px 22px; border-radius: 24px; background: #20232a; border: 1px solid var(--line); font-size: 16px; display: none; z-index: 40; }
+  .offline { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 50; padding: 12px 22px; border-radius: 14px; background: #3a1512; border: 2px solid var(--no); color: #ffd9d4; font-size: 16px; }
+  .offline[hidden] { display: none; }
+  .toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); padding: 12px 22px; border-radius: 24px; background: #20232a; border: 1px solid var(--line); font-size: 16px; display: none; z-index: 40; }
 
   /* a laptop screen: smaller tiles, so six kinds still fit in two rows */
   @media (max-width: 1600px) and (min-width: 901px) {
@@ -249,6 +251,7 @@
 </style>
 </head>
 <body>
+<div class="offline" id="offline" hidden>Can't reach UI Taste right now, so taps aren't saving. Ask <span class="ai-name">Claude</span> to start it.</div>
 <div class="app">
   <div class="top">
     <div class="brand">
@@ -319,12 +322,17 @@ const img = it => `/api/taste/${it.id}/image`;
 const mine = () => all.filter(x => x.status !== 'inbox'), brought = () => all.filter(x => x.status === 'inbox').sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
 const asks = it => (it.points || []).filter(p => p.read && !p.verdict).length;       // the AI's reads waiting on their Yes / Not quite
 const item = () => all.find(x => x.id === cur);
-const api = (path, method, body) => fetch('/api/taste' + path, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+// When UI Taste isn't running, every tap would vanish without a word: the page says so, plainly, until it's back.
+function reach(ok) { const b = $('offline'); if (b) b.hidden = ok; }
+const api = (path, method, body) => fetch('/api/taste' + path, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
+  .then(r => { reach(true); return r; }, () => { reach(false); return { ok: false, json: async () => ({}) }; });
 const typing = () => !!(draft || fixing || editing) || ['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName);
 let lastSig = '';         // what the page last drew from; a refresh that changes nothing redraws nothing
 
 async function load(first) {
-  const [a, l] = await Promise.all([fetch('/api/taste').then(r => r.json()), fetch('/api/taste/learned').then(r => r.json())]);
+  let a, l;
+  try { [a, l] = await Promise.all([fetch('/api/taste').then(r => r.json()), fetch('/api/taste/learned').then(r => r.json())]); reach(true); }
+  catch { reach(false); return; }
   all = a.items || []; learned = l.learned || [];
   const sig = JSON.stringify([all.map(x => [x.id, x.status, x.note, x.take, x.title, x.ask, x.want?.sent, (x.used || []).length, (x.points || []).map(p => [p.id, p.his, p.read?.text, p.verdict?.ok, p.verdict?.sent, p.verdict?.words, p.sent, p.dislike, p.kind, p.crop, JSON.stringify(p.box)])]), learned.length]);
   if (!first && sig === lastSig) return;
@@ -374,6 +382,8 @@ function drawTop() {
   $('send').title = u ? `Everything you did is already saved. This tells ${AI} (Alt+Q).` : `Box a part, or answer one of ${AI}'s questions, then send it here.`;
   const n = learned.length;
   $('learnedN').textContent = n ? `· ${n} part${n === 1 ? '' : 's'}` : '';
+  // Nothing learned yet: the first thing they read is what to do, not a heading about learning.
+  document.querySelector('.map .lab').style.display = n ? '' : 'none';
 }
 
 function drawStrip() {
@@ -603,12 +613,12 @@ function balloon(p) {
 
 function wire(el, p) {
   const it = item(), path = `/${it.id}/points/${p.id}`;
-  const patch = async body => { const r = await api(path, 'PATCH', body); if (r.ok) { const n = await r.json(); for (const k of Object.keys(p)) if (!(k in n) && k !== 'crop') delete p[k]; Object.assign(p, n); } else toast("That didn't save, try again"); };
+  const patch = async body => { const r = await api(path, 'PATCH', body); if (r.ok) { const n = await r.json(); for (const k of Object.keys(p)) if (!(k in n) && k !== 'crop') delete p[k]; Object.assign(p, n); return true; } toast("That didn't save, try again"); return false; };
   el.onclick = e => e.stopPropagation();
   el.onmousedown = e => e.stopPropagation();
   el.querySelectorAll('[data-do]').forEach(b => b.onclick = async e => {
     e.stopPropagation(); const what = b.dataset.do;
-    if (what === 'yes') { await patch({ verdict: { ok: true } }); refresh(); drawFoot(); toast(`Saved. It reaches ${AI} when you press Send`); }
+    if (what === 'yes') { const ok = await patch({ verdict: { ok: true } }); refresh(); drawFoot(); if (ok) toast(`Saved. It reaches ${AI} when you press Send`); }
     else if (what === 'nq') { fixing = p.id; drawParts(); }
     else if (what === 'undo') { await patch({ verdict: null }); refresh(); drawFoot(); }
     else if (what === 'edit') { editing = p.id; drawParts(); }
@@ -616,7 +626,7 @@ function wire(el, p) {
   });
   const fx = el.querySelector('[data-fix]');
   if (fx) { fx.value = typed["f" + p.id] || ""; fx.oninput = () => typed["f" + p.id] = fx.value; fx.onkeydown = async e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fixing = null; delete typed["f" + p.id]; await patch({ verdict: { ok: false, words: fx.value } }); refresh(); drawFoot(); toast(`Saved. It reaches ${AI} when you press Send`); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fixing = null; delete typed["f" + p.id]; const ok = await patch({ verdict: { ok: false, words: fx.value } }); refresh(); drawFoot(); if (ok) toast(`Saved. It reaches ${AI} when you press Send`); }
     else if (e.key === 'Escape') { fixing = null; drawParts(); } }; }
   const ed = el.querySelector('[data-edit]');
   if (ed) { ed.value = typed["e" + p.id] ?? (p.his || ""); ed.oninput = () => typed["e" + p.id] = ed.value; ed.onkeydown = async e => {
