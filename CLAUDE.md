@@ -19,16 +19,33 @@ Do these in order. The person's only part is pasting the line they already paste
    ```
    Use the name your person calls you. A picture is optional (png, jpg or webp); without one your first letter is your face. **Write paths with forward slashes** (`C:/Users/...`): a single backslash breaks JSON. Don't ask them for any of this if you already know it. If you change the config later, run `restart`; an open page picks it up by itself.
 4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. Then `node tools/taste.mjs open`. It starts the server (port 7960 unless you set another) and opens the page in its own window on their screen, so tell them it's coming.
-5. **Hook it into what they already have** (skip what they don't use):
-   - **Homebase** (a `the-homebase` folder, usually beside this one): add one item to the "Built for you" group in its `data/nav.json` (make the file from `nav.suggested.json` if it isn't there):
-     `{ "name": "UI Taste", "sub": "Box what you like. <your name> learns it.", "url": "http://127.0.0.1:<your port>/", "icon": "star" }`
-   - **The glass** (`the-glass`): ♥ Taste in its note box saves what they box on their screen straight into UI Taste. Set `GLASS_TASTE_URL` to `http://127.0.0.1:<your port>` the same way the glass's own settings are set: `"env"` in the `.claude/settings.json` of the folder you run the glass from (its CLAUDE.md shows it), then `node tools/glass.js restart`. If your app won't let you change settings, hand your person the exact line to add and say why.
+5. **Plug into the rest.** The section of that name below is the step: one command that puts UI Taste on Homebase and ♥ Taste on the glass, whichever they have.
 6. **Go first: show them on a design they like.** Ask them for one: "Paste me a screenshot of an app or site whose look you like (Ctrl+V right on the page), or tell me one and I'll grab it." If they give you a file, or ask you to grab a site and you can screenshot it, `node tools/taste.mjs add <file> "their words" --title "Name"` saves it as theirs. (`bring` is for designs you pick yourself: they land under "brought these" for them to keep or clear.) Then:
    - Look at the picture (`node tools/taste.mjs see <design>` prints its path; read the file).
    - Box the part you think they'd like and ask: `node tools/taste.mjs guess <design> x,y,w,h "what I think you like here, as a question" --kind <kind>` (x,y,w,h are 0..1 of the picture). It shows on their page right away.
    - Tell them in a line: "I boxed the part I think you like. Tap Yes if I'm right, or Not quite and tell me."
    - Then: "Now you box a part you like, say a word or two, and press ➤ Send. Tell me when you have." Read it (below). That's the whole loop, and now they've done it once.
 7. **Remember how this works.** If you keep a memory (notes, a brain folder, a CLAUDE.md of your own), save this in your own words now: where UI Taste lives, "open UI Taste" opens it, "I sent you some" means run `waiting`, and before any UI you pull `learned`. If you don't keep a memory, that's fine: they'll tell you "I sent you some in UI Taste" and you'll find this file.
+
+## Plug into the rest
+
+This is one of four builds Hunter and I made that fit together the same way: **Homebase** (your memory as a web they can see), **the glass** (marks on their screen), **the Den** (a table you share) and **UI Taste** (what they like the look of). Each works on its own. This section is the same, word for word, in all four, so whichever one you set up, the step is this:
+
+1. **Run `node tools/fit.mjs`.** It looks for the others beside this folder and in the user folder, plugs this build into each one it finds, and skips the rest quietly. Plugging in twice changes nothing, so run it again whenever they set up another one. Somewhere else? `--also "<folder>"`. To look without changing anything: `--check`.
+2. **If it says the glass needs its buttons, run it again with `--settings`.** Those two live in their Claude settings (`~/.claude/settings.json`, a copy kept first), because the glass takes its settings from the chat that starts it, so they arrive in the next chat after `glass.js restart`. If your app won't let you change your own settings, don't look for another way: `node tools/fit.mjs --line` prints one line for your person to paste into a Terminal. Hand it over before you'd get refused, with a sentence on what it does.
+3. **Show them what's new, don't describe it.** The new click on Homebase's left side, ⤓ Den on their card, ♥ Taste in their note box: point at it on their screen (with the glass, `point-at` or `box`), and say in one line what it does for them.
+
+What fitting does, pair by pair:
+
+| These two | What they get |
+|---|---|
+| Homebase + the Den | the Den one click away on Homebase's left side, and a way back to Homebase in the Den |
+| Homebase + UI Taste | UI Taste one click away on Homebase's left side |
+| The glass + the Den | ⤓ Den on their card: what they mark goes onto the table as a card, and `den.js point` circles a card on their real screen |
+| The glass + UI Taste | ♥ Taste in their note box: a design they box anywhere goes straight into UI Taste |
+| The glass + Homebase | nothing to set: they box a line of your memory on Homebase, and you fix it |
+
+If a pair doesn't work after this, `node tools/fit.mjs --check` says what's missing, and each build's own doctor says why.
 
 ## The loop, every time
 
