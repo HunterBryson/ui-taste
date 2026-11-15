@@ -5,7 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, ROOT } from './lib/config.js';
-import { createStore, Oops, ID, PID } from './lib/store.js';
+import { createStore, Oops, ID, PID, KINDS } from './lib/store.js';
 
 const cfg = loadConfig();
 const store = createStore(cfg.tasteDir);
@@ -29,15 +29,16 @@ const readBody = req => new Promise((ok, no) => {
 const id = s => { if (!ID.test(s)) throw new Oops(400, 'bad design id'); return s; };
 const pid = s => { if (!PID.test(s)) throw new Oops(400, 'bad part id'); return s; };
 const sendFile = (res, file, cache) => {
-  if (!file || !fs.existsSync(file)) { res.writeHead(404); return res.end('not found'); }
-  res.writeHead(200, { 'content-type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': cache || 'no-cache' });
+  if (!file || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
+  // last-modified lets an open page notice it was updated and reload itself.
+  res.writeHead(200, { 'content-type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': cache || 'no-cache', 'last-modified': fs.statSync(file).mtime.toUTCString() });
   fs.createReadStream(file).pipe(res);
 };
 
 async function api(req, res, p) {
   const m = req.method;
   if (m === 'GET' && p === '/api/whoami') return send(res, 200, { app: 'ui-taste', pid: process.pid, root: ROOT, port: cfg.port, data: cfg.tasteDir, node: process.version });
-  if (m === 'GET' && p === '/api/config') return send(res, 200, { ai: { name: cfg.ai.name, picture: !!cfg.picturePath && fs.existsSync(cfg.picturePath) }, person: { name: cfg.person.name } });
+  if (m === 'GET' && p === '/api/config') return send(res, 200, { ai: { name: cfg.ai.name, picture: !!cfg.picturePath && fs.existsSync(cfg.picturePath) }, person: { name: cfg.person.name }, homebase: cfg.homebase || '' });
   if (m === 'GET' && p === '/api/picture') return sendFile(res, cfg.picturePath && fs.existsSync(cfg.picturePath) ? cfg.picturePath : null);
   if (m === 'GET' && p === '/api/events') {
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
@@ -53,17 +54,21 @@ async function api(req, res, p) {
     if (m === 'POST') { const it = store.add(await readBody(req)); tell({ what: 'added', id: it.id }); log(`added ${it.id} (${it.from.how})`); return send(res, 201, it); }
   }
   if (parts.length === 1 && m === 'GET' && parts[0] === 'waiting') return send(res, 200, { waiting: store.waiting(), unsent: store.unsent() });
-  if (parts.length === 1 && m === 'GET' && parts[0] === 'learned') return send(res, 200, { learned: store.learned() });
+  if (parts.length === 1 && m === 'GET' && parts[0] === 'learned') return send(res, 200, { learned: store.learned(), kinds: KINDS });
+  if (parts.length === 1 && m === 'GET' && parts[0] === 'his') return send(res, 200, store.his());
+  if (parts.length === 1 && m === 'GET' && parts[0] === 'removed') return send(res, 200, { removed: store.removed() });
+  if (parts.length === 1 && m === 'POST' && parts[0] === 'heard') { const b = await readBody(req); const n = store.heard({ points: Array.isArray(b.points) ? b.points : [], items: Array.isArray(b.items) ? b.items : [] }); if (n) tell({ what: 'heard', n }); return send(res, 200, { heard: n }); }
   if (parts.length === 1 && m === 'POST' && parts[0] === 'send') { const n = store.send(); if (n) { tell({ what: 'sent', n }); log(`sent ${n}`); } return send(res, 200, { sent: n }); }
 
   const [i, a, b, c] = parts;
   if (parts.length === 1) {
-    if (m === 'PATCH') { const body = await readBody(req); const it = store.note(id(i), body.note); tell({ what: 'note', id: i }); return send(res, 200, it); }
+    if (m === 'PATCH') { const it = store.note(id(i), await readBody(req)); tell({ what: 'note', id: i }); return send(res, 200, it); }
     if (m === 'DELETE') { const it = store.remove(id(i)); tell({ what: 'removed', id: i }); return send(res, 200, it); }
   }
   if (parts.length === 2) {
     if (m === 'GET' && a === 'image') return sendFile(res, store.file(id(i)), 'max-age=31536000, immutable');
     if (m === 'POST' && a === 'keep') { const body = await readBody(req); const it = store.keep(id(i), body.note); tell({ what: 'kept', id: i }); return send(res, 200, it); }
+    if (m === 'POST' && a === 'unkeep') { const it = store.unkeep(id(i)); tell({ what: 'unkept', id: i }); return send(res, 200, it); }
     if (m === 'POST' && a === 'restore') { const it = store.restore(id(i)); tell({ what: 'restored', id: i }); return send(res, 200, it); }
     if (m === 'POST' && a === 'mine') { const it = store.mine(id(i), await readBody(req)); tell({ what: 'mine', id: i }); return send(res, 200, it); }
     if (m === 'POST' && a === 'points') { const pt = store.addPoint(id(i), await readBody(req)); tell({ what: 'point', id: i, point: pt.id }); return send(res, 201, pt); }
