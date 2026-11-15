@@ -15,10 +15,10 @@ Do these in order. The person's only part is pasting the line they already paste
 2. **Clone it beside, never inside, another repo.** `git clone https://github.com/HunterBryson/ui-taste "%USERPROFILE%\ui-taste"` on Windows, `~/ui-taste` on a Mac. If you keep your memory in a git folder, do not clone into it: your next commit would sweep their pictures in. If a `ui-taste` folder is already there, look before you touch it: it may already hold their designs (`data/taste/`). Then `git pull` instead. **An old copy somewhere else** (another folder, another port)? Install fresh here, `stop` the old one from its own folder, then `node tools/taste.mjs import "<the old folder>"`. It brings every design, part and crop over and keeps everything already here (never copy the folder by hand: that overwrites this copy's list). Rename the old folder instead of deleting it, and tell them where it is.
 3. **Make it yours.** Write `ui-taste.config.json` in the clone:
    ```json
-   { "ai": { "name": "<your name>", "picture": "<a full path to your picture, or leave it out>" }, "person": { "name": "<their first name>" } }
+   { "port": 7960, "ai": { "name": "<your name>", "picture": "<a full path to your picture, or leave it out>" }, "person": { "name": "<their first name>" } }
    ```
    Use the name your person calls you. If they have [Homebase](https://github.com/HunterBryson/the-homebase), add `"homebase": "http://127.0.0.1:7940/"` (its address) so the page gets a way back to it. A picture is optional (png, jpg or webp); without one your first letter is your face. **Write paths with forward slashes** (`C:/Users/...`): a single backslash breaks JSON. Don't ask them for any of this if you already know it. If you change the config later, run `restart`; an open page picks it up by itself.
-4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. Then `node tools/taste.mjs open`. It starts the server (port 7960 unless you set another) and opens the page in its own window on their screen, so tell them it's coming.
+4. **Check it and open it.** From the clone: `node tools/taste.mjs doctor`. Fix the first ✗ it shows, then run it again. (doctor starts the server if it's down.) Then `node tools/taste.mjs open`. It starts the server (port 7960 unless you set another) and opens the page in its own window on their screen, so tell them it's coming.
 5. **Plug into the rest.** The section of that name below is the step: one command that puts UI Taste on Homebase and ♥ Taste on the glass, whichever they have.
 6. **Go first: show them on a design they like.** Ask them for one: "Paste me a screenshot of an app or site whose look you like (Ctrl+V right on the page), or tell me one and I'll grab it." If they give you a file, or ask you to grab a site and you can screenshot it, `node tools/taste.mjs add <file> "their words" --title "Name"` saves it as theirs. (`bring` is for designs you pick yourself: they sit in the same list with a small tag saying you brought them.) Then:
    - Look at the picture (`node tools/taste.mjs see <design>` prints its path; read the file).
@@ -31,7 +31,7 @@ Do these in order. The person's only part is pasting the line they already paste
    - **You live in a shelves brain** (a `memory` folder with a `DESK.md` and a `FOOTING.md`, like [the-shelves](https://github.com/HunterBryson/the-shelves)): copy it to `memory/self/ui-taste.md` and add a row to the desk's table in the same columns as the others. Word: UI Taste. What's in it: how I learn their eye, and what I'm learning about it. Block: `self/ui-taste.md`. Also: my taste, I sent you some, ♥ Taste, design, redesign. Commit it the way your brain commits.
    - **Your memory is another kind:** put the block wherever you keep how you work with them, under a heading you'll find again.
    - **No memory at all:** UI Taste works as it is; the skill carries the moves. If they want an AI that remembers them, the-shelves sets one up from one line; mention it once, never push.
-   Fill its "This setup" section now. From then on the block is yours: you rewrite it as you learn them.
+   If it went into your memory, fill its "This setup" section now. From then on the block is yours: you rewrite it as you learn them.
 
 ## Plug into the rest
 

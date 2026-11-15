@@ -225,7 +225,7 @@ if (cmd === 'start' || cmd === 'status') {
   }
   const goneFrom = path.join(src, 'removed');
   if (fs.existsSync(goneFrom)) { fs.mkdirSync(path.join(dst, 'removed'), { recursive: true }); for (const f of fs.readdirSync(goneFrom)) cp(path.join(goneFrom, f), path.join(dst, 'removed', f)); }
-  fs.writeFileSync(mineFile + '.tmp', JSON.stringify(mine, null, 1)); fs.renameSync(mineFile + '.tmp', mineFile);
+  if (n) { fs.writeFileSync(mineFile + '.tmp', JSON.stringify(mine, null, 1)); fs.renameSync(mineFile + '.tmp', mineFile); } else { try { fs.unlinkSync(backup); } catch {} }
   if (wasUp) await up();
   say(`Brought over ${n} design${n === 1 ? '' : 's'} from ${src}${theirs.length - n ? ` (${theirs.length - n} already here, left as they were)` : ''}. This copy now has ${mine.length}.${fs.existsSync(backup) ? `\nIts list from before is kept at ${backup}.` : ''}\nThe old folder is untouched: stop it from its own folder if it's running, then rename it (don't delete it) and tell them where it is.`);
 } else if (cmd === 'remove') {
@@ -315,6 +315,8 @@ if (cmd === 'start' || cmd === 'status') {
   // The skill: so every chat knows the moves, not only chats opened in this folder.
   if (!fs.existsSync(SKILL_DST)) warn(`the ui-taste skill isn't installed, so only chats opened in this folder know how UI Taste works`, `${RUN} skill`);
   else if (!/^name:\s*ui-taste\s*$/m.test(fs.readFileSync(SKILL_DST, 'utf8'))) warn(`${SKILL_DST} is some other skill, not this one`, 'look at it before changing anything');
+  // Pointing at a folder that isn't there (they moved it) breaks every chat that uses it: that's a ✗, not a ⚠.
+  else if (!fs.readFileSync(SKILL_DST, 'utf8').includes(fwd(SELF))) bad(`the ui-taste skill points at another folder, so every chat that uses it will fail (moved, or another clone)`, `${RUN} skill`);
   else if (fs.existsSync(SKILL_SRC) && fs.readFileSync(SKILL_DST, 'utf8') !== skillText()) warn(`the ui-taste skill is installed but older than this clone's skill/SKILL.md (or points at another clone)`, `${RUN} skill`);
   else ok(`the ui-taste skill is installed: ${SKILL_DST}`);
   const log = path.join(DATA, 'server.log'); if (startFailed && fs.existsSync(log)) { const last = fs.readFileSync(log, 'utf8').trim().split('\n').slice(-3); say('  last lines of the log:\n' + last.map(l => '      ' + l).join('\n')); }

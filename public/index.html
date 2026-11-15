@@ -183,7 +183,7 @@
     border: 3px dashed #34404c; border-radius: 22px; background: radial-gradient(600px 300px at 50% 45%, rgba(108,198,255,.06), transparent 70%); cursor: pointer; }
   .empty:hover { border-color: var(--him); }
   .empty b { display: block; color: var(--ink); font-size: 30px; margin-bottom: 12px; }
-  .empty .keys { display: table; margin: 18px auto 0; padding: 10px 20px; border-radius: 22px; background: var(--him); color: #06202e; font-weight: 700; font-size: 17px; }
+  .empty .keys { display: inline-block; margin: 0 4px; padding: 3px 12px; border-radius: 14px; background: var(--him); color: #06202e; font-weight: 700; font-size: 17px; }
   .empty .or { display: block; margin-top: 14px; font-size: 16px; color: var(--dim); }
   .teach { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; padding: 8px 18px; border-radius: 20px; background: rgba(15,31,43,.92); border: 1px solid #2f4a5e; color: var(--him); font-size: 15px; white-space: nowrap; pointer-events: none; z-index: 2; }
 
@@ -460,7 +460,7 @@ function drawStage() {
   drawHead();
   if (mode) return drawBoard();
   if (!it) {
-    look.innerHTML = `<div class="empty" id="emptyDrop"><div><b>Show ${esc(AI)} a design you like</b>A screenshot of any app or site whose look you like.<br>Copy it, click here, and paste.<span class="keys">Ctrl+V to paste</span><span class="or">or drop a picture anywhere on this page, or click to pick a file</span></div></div>`;
+    look.innerHTML = `<div class="empty" id="emptyDrop"><div><b>Show ${esc(AI)} a design you like</b>A screenshot of any app or site whose look you like.<br>Copy it, then press <span class="keys">Ctrl+V</span> anywhere on this page.<span class="or">Or drop a picture here, or click here to pick a file.</span></div></div>`;
     $('emptyDrop').onclick = () => $('pick').click();
     $('foot').innerHTML = ''; return;
   }
@@ -762,7 +762,7 @@ new ResizeObserver(() => { const l = $('look'), k = l.clientWidth + 'x' + l.clie
 
 // New things show up by themselves: the AI's reads, a picture saved from the glass.
 // After the server restarts (a new name or picture in the config), the stream reconnects: read who we are again.
-try { const ev = new EventSource('/api/events'); let opened = false; ev.addEventListener('taste', () => load()); ev.onopen = () => { if (opened) who().then(() => load(true)); opened = true; }; } catch {}
+try { const ev = new EventSource('/api/events'); let opened = false; ev.addEventListener('taste', () => load()); ev.onopen = () => { reach(true); if (opened) who().then(() => load(true)); opened = true; }; ev.onerror = () => { if (ev.readyState !== EventSource.OPEN) reach(false); }; } catch {}
 setInterval(() => { if (!document.hidden) load(); }, 20000);
 // When this page's file changes (an update, a git pull), an open window picks it up by itself, unless they're mid-typing.
 let myVersion = null;
