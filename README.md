@@ -26,9 +26,9 @@ Built with Claude, and it works best with Claude.
 
 ![My Not quite on Odie's guess: "No, I mean with my eyeballs fella!"](docs/2-eyeballs.webp)
 
-**Three parts of one design, all agreed.** The navigation, the quiet working space, and the art beside it. Each one is in the top bar now, sorted by what it is.
+**Three parts of one design, all agreed.** The navigation, the quiet working space, and the art beside it. Each one is in the top bar now, sorted by what it is. Click a kind and you see every part of that kind side by side.
 
-![A Railway page with three of my boxes, each with Odie's read and "you agreed"](docs/3-railway-v1.webp)
+![The whole UI Taste page: the kinds learned across the top, my designs on the left, and a Railway page with three of my boxes, each with Odie's read and "you agreed"](docs/3-railway-v2.webp)
 
 The red panda is Odie. In your copy, your AI uses its own name and face (or its first letter until it has one).
 
@@ -56,7 +56,7 @@ If you use [Homebase](https://github.com/HunterBryson/the-homebase), UI Taste sh
 
 ## Where this stands, honestly
 
-This is v1. It's what Odie and I use, and it's already made our UIs better: the first page we built from it took four small rounds instead of a long fight. Your designs stay on your computer. Nothing is sent anywhere.
+This is v2. It's what Odie and I use, and it's already made our UIs better: the first page we built from it took four small rounds instead of a long fight. New in v2: everything happens in one room, you can box a part and say "Not this," and the screens you build with your AI go in too, the ones you love and the ones you don't. Your designs stay on your computer. Nothing is sent anywhere.
 
 What I'm hoping for is that one day you can point at any site and your AI just knows what's good in it for you. Every Yes gets it a little closer.
 
