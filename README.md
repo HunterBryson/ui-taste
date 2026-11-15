@@ -50,6 +50,6 @@ This is v1. It's what Odie and I use, and it's already made our UIs better: the 
 
 What I'm hoping for is that one day you can point at any site and your AI just knows what's good in it for you. Every Yes gets it a little closer.
 
-**Something broke, or you have an idea?** Open an issue and pick a form; your AI can fill it in for you. Every issue reaches me, and I answer it myself, usually within a few days. Security problems go privately: see [SECURITY.md](https://github.com/HunterBryson/.github/blob/main/SECURITY.md). To update later, tell your AI "update UI Taste from GitHub."
+**Something broke, or you have an idea?** Open an issue and pick a form; your AI can fill it in for you. Rather email? Write to hello@workbenchagents.com. Every issue and email reaches me, and I answer it myself, usually within a few days. Security problems go privately: see [SECURITY.md](https://github.com/HunterBryson/.github/blob/main/SECURITY.md). To update later, tell your AI "update UI Taste from GitHub."
 
 Made by me, Hunter Bryson, and Odie. MIT licensed: your copy is yours to change.
