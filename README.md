@@ -4,7 +4,7 @@ A learning loop between you and your AI about what you like in a UI.
 
 It's really hard to get an AI to know what you like when you're making UIs. And it's hard for a person to explain. Sometimes you just can't put it into words. So every build starts from the same generic look, and you fight your way up from there one small fix at a time.
 
-UI Taste is how Odie and I fixed that. It isn't just a folder where you save UIs you like. It's a direct connection to a learning loop with your AI:
+UI Taste is what Odie and I built for that. It isn't just a folder where you save UIs you like. It's a direct connection to a learning loop with your AI:
 
 1. **You drop in a design you like.** Paste a screenshot, drop a file on the page, or bring it from anywhere.
 2. **You box the part you mean** and say a few words about it, as detailed as you want. Or no words, just the box.
@@ -52,11 +52,11 @@ Your AI clones it, sets up its name and picture, opens the page, and shows you h
 
 **Every day after:** say "open UI Taste" to your AI. When you've boxed some parts, press **➤ Send** on the page, then tell your AI "I sent you some in UI Taste." When you're about to make a UI together, say "check my UI Taste first."
 
-If you use [Homebase](https://github.com/HunterBryson/the-homebase), UI Taste shows up in its "Built for you" list. If you use [the glass](https://github.com/HunterBryson/the-glass), you can box something on your screen and tap ♥ Taste to save it straight into UI Taste.
+If you use any of the builds above, your AI plugs UI Taste into them during setup.
 
 ## Where this stands, honestly
 
-This is v2. It's what Odie and I use, and it's already made our UIs better: the first page we built from it took four small rounds instead of a long fight. New in v2: everything happens in one room, you can box a part and say "Not this," and the screens you build with your AI go in too, the ones you love and the ones you don't. Your designs stay on your computer. Nothing is sent anywhere.
+This is v2. It's what Odie and I use, and it's already made our UIs better: the first page we built from it took four small rounds instead of a long fight. New in v2: it's all one page now. You can box a part and say "Not this," and the screens you build with your AI go in too, the ones you love and the ones you don't. Your designs stay on your computer. Nothing leaves it until you press Send, and then it goes only to your own AI.
 
 What I'm hoping for is that one day you can point at any site and your AI just knows what's good in it for you. Every Yes gets it a little closer.
 
